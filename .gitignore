@@ -230,6 +230,10 @@ csx/
 ecf/
 rcf/
 
+# Antigravity Setup
+.antigravity/
+.docs/
+
 # Windows Store app package directories and files
 AppPackages/
 BundleArtifacts/
