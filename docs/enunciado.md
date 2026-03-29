@@ -45,7 +45,7 @@ O trabalho consiste na implementação de uma plataforma de divulgação de aler
 - Máximo de **20 placares** registados em simultâneo.
 - Os placares podem ligar-se e desligar-se a qualquer momento.
 - O identificador é um **DWORD**, começa em 1, incrementa de 1 em 1, **sem reutilização**.
-- Quando recebe o seu identificador, o placar mostra: `Identificador = 7`
+- Quando recebe o seu identificador, o placar mostra-o na consola: `Identificador = 7`
 
 #### Alertas
 - Constituídos por: **mensagem de texto** (140 `TCHAR`) + **duração em segundos** (`DWORD`).
