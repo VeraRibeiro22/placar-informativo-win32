@@ -1,7 +1,7 @@
 #include "placar.h"
 
 int _tmain(int argc, TCHAR* argv[]) {
-    _tprintf(_T("=== Placar Informativo (M1 - Standalone) ===\n"));
+    _tprintf(_T("=== Placar Informativo ===\n"));
 
     PLACAR_CONTEXT ctx;
     ZeroMemory(&ctx, sizeof(PLACAR_CONTEXT));
