@@ -1,6 +1,6 @@
 # SO2 – Trabalho Laboratorial – M1
 
-**Grupo:** Pedro Teixeira Amorim (2022157609) Vera Lúcia Martins Ribeiro (2024)
+**Grupo:** Pedro Teixeira Amorim (2022157609) Vera Lúcia Martins Ribeiro (2024140140)
 **Turma:** P2
 **Data de entrega:** 12 de abril de 2026
 
