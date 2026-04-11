@@ -48,6 +48,10 @@ unsigned __stdcall AlertThread(void* param) {
         if (waitResult == WAIT_OBJECT_0) { // Notificar
             ResetEvent(ctx->hNotificar);
 
+            if (!ctx->isConnected) { //se nao estiver ligado, ignora o alerta
+                continue;
+            }
+
             if (!ReadAlertFromRegistry(ctx->pipeName, &alerta)) {
                 continue;
             }
