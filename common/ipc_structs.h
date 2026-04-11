@@ -16,11 +16,11 @@
 #include <tchar.h>
 
 /* ==========================================================================
- * placar → central  (via Named Pipes)
- * Tipo 1 = ligar, 2 = desligar, 3 = fim do alerta (duração esgotada)
+ * placar ↔ central  (via Named Pipes)
+ * Tipo 1 = ligar, 2 = desligar, 3 = fim do alerta (duração esgotada), 5 = cancelar alerta, 6 = encerrar plataforma
  * ========================================================================== */
 typedef struct {
-    BYTE tipo;      // 1 – ligar | 2 – desligar | 3 – fim do alerta
+    BYTE tipo;      // 1 – ligar | 2 – desligar | 3 – fim do alerta| 5 – cancelar alerta | 6 – encerrar plataforma
 } MSG_CMD;
 
 /* ==========================================================================
@@ -41,12 +41,7 @@ typedef struct {
     DWORD duracao;      // Duração em segundos
 } MSG_ALERTA;
 
-/* ==========================================================================
- * central → placar : cancelar alerta ou encerrar plataforma  (via Named Pipes)
- * ========================================================================== */
-typedef struct {
-    BYTE tipo;          // 5 – cancelar alerta | 6 – encerrar plataforma
-} MSG_CMD_CENTRAL;
+
 
 /* ==========================================================================
  * central ↔ monitor  (via Memória Partilhada / Ficheiros Mapeados em Memória)
