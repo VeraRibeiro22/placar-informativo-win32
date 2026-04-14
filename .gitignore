@@ -233,6 +233,8 @@ rcf/
 # Antigravity Setup
 .antigravity/
 .docs/
+.agent/
+AGENTS.md
 
 # Windows Store app package directories and files
 AppPackages/
