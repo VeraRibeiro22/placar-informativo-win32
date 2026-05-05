@@ -17,17 +17,20 @@
 
 /* ==========================================================================
  * placar ↔ central  (via Named Pipes)
- * Tipo 1 = ligar, 2 = desligar, 3 = fim do alerta (duração esgotada), 5 = cancelar alerta, 6 = encerrar plataforma
+ * Utilizada em ambos os sentidos:
+ *   placar → central: 1 = ligar, 2 = desligar, 3 = fim do alerta (duração esgotada)
+ *   central → placar: 5 = cancelar alerta, 6 = encerrar plataforma
+ *   confirmação (eco): o recetor devolve a mesma estrutura ao emissor
  * ========================================================================== */
 typedef struct {
-    BYTE tipo;      // 1 – ligar | 2 – desligar | 3 – fim do alerta| 5 – cancelar alerta | 6 – encerrar plataforma
+    BYTE tipo;      // 1 – ligar | 2 – desligar | 3 – fim do alerta | 5 – cancelar alerta | 6 – encerrar plataforma
 } MSG_CMD;
 
 /* ==========================================================================
  * central → placar : atribuição de identificador  (via Named Pipes)
  * ========================================================================== */
 typedef struct {
-    BYTE tipo;              // 3 – atribuir identificador
+    BYTE tipo;              // 7 – atribuir identificador
     DWORD identificador;    // ID único atribuído pelo central (começa em 1, sem reutilização)
 } MSG_ID;
 
@@ -40,7 +43,6 @@ typedef struct {
     TCHAR msg[140];     // Mensagem do alerta (máximo 140 TCHAR)
     DWORD duracao;      // Duração em segundos
 } MSG_ALERTA;
-
 
 
 /* ==========================================================================

@@ -104,7 +104,7 @@ typedef struct {
 ```c
 // Atribuição de identificador
 typedef struct {
-    BYTE tipo;        // 3 – atribuir identificador
+    BYTE tipo;        // 7 – atribuir identificador
     DWORD identificador;
 } MSG_ID;
 
@@ -217,3 +217,44 @@ Para a primeira entrega, o `placar` deve funcionar **sem o `central`**, simuland
    - Apresenta na consola: `23/03/2026 (13:51:10): 'A7 Norte – Acidente Km 34 - Lento'`
 
 5. Após receber o alerta, usa um **waitable timer** para gerir a duração e apresenta quando expirar: `23/03/2026 (13:56:10): '---'`
+
+---
+
+### 12. Requisitos Específicos da M2 (Programa `central` + `placar` com comunicação real)
+
+Para a segunda entrega (10 de maio), o material a entregar é:
+
+#### 12.1 Programa `central` implementado
+
+1. Recebe através da **linha de comandos** o nome do named pipe a utilizar na comunicação com os placar. Ao escrever no terminal `central.exe tubo`, deve utilizar o named pipe com o nome `tubo` (`\\.\pipe\tubo`).
+
+2. Recebe **comandos do utilizador administrador** e comunica com o placar através de named pipes (apenas um named pipe para cada placar — comunicação bidirecional em **modo message**):
+   - O comando **`alerta`** deve enviar uma estrutura `MSG_ALERTA` (tipo = 4) ao(s) placar e **receber uma estrutura igual** do(s) placar como confirmação da receção do(s) alerta(s).
+   - O comando **`cancelar`** deve enviar uma estrutura `MSG_CMD` (tipo = 5) ao placar e **receber uma estrutura igual** como confirmação da receção do comando.
+   - O comando **`listar`** não necessita de enviar qualquer informação ao placar, limitando-se a mostrar na consola a lista de placar (que estão ligados ao central), o seu identificador e a mensagem de alerta (se estiver algum alerta ativo nesse placar).
+   - O comando **`encerrar`** deve enviar uma estrutura `MSG_CMD` (tipo = 6) ao placar e **não recebe nada** deste.
+
+3. Recebe e processa **pedidos/atualizações dos placar**:
+   - O pedido `MSG_CMD` (tipo = 1) corresponde ao comando **"ligar"** de um placar. Deve enviar de volta uma estrutura `MSG_ID` (tipo = 7) com o identificador a atribuir ao placar que efetuou o pedido.
+   - O pedido `MSG_CMD` (tipo = 2) corresponde ao comando **"desligar"** de um placar. Deve enviar de volta uma **estrutura igual** como confirmação da receção do comando.
+   - O pedido `MSG_CMD` (tipo = 3) corresponde à atualização **"fim do alerta (duração)"** de um placar e **não necessita** de enviar nada de volta.
+
+4. Deve manter a **informação de estado do sistema atualizada**, nomeadamente os placar que se encontram ligados, os alertas ativos e os identificadores atribuídos, garantindo a **coerência dos dados**.
+
+#### 12.2 Alterações ao programa `placar` para comunicar com o `central`
+
+5. Enviar o pedido de **"ligar"** ao central (`MSG_CMD`: tipo = 1), receber o identificador que lhe foi atribuído (`MSG_ID`: tipo = 7) e mostrar o valor ao utilizador instalador (da mesma forma que no ponto 1 da M1).
+
+6. Enviar o pedido de **"desligar"** ao central (`MSG_CMD`: tipo = 2), receber a confirmação do central (`MSG_CMD`: tipo = 2) e terminar a execução da aplicação placar.
+
+7. Após decorrido o tempo "duração" de um alerta ativo, enviar a atualização **"fim do alerta (duração)"** ao central (`MSG_CMD`: tipo = 3).
+
+8. Quando recebe uma atualização do tipo **"alerta"** do central (`MSG_ALERTA`: tipo = 4) deve **confirmar a receção** do alerta enviando a mesma estrutura de volta ao central, mostrando de seguida a mensagem de alerta na consola (tal como indicado no ponto 4 da M1).
+
+9. Quando recebe uma atualização do tipo **"cancelar"** do central (`MSG_CMD`: tipo = 5) deve **confirmar a receção** enviando a mesma estrutura de volta ao central, mostrando de seguida a mensagem de placar sem alerta ativo (tal como indicado no ponto 5 da M1).
+
+10. Quando recebe uma atualização do tipo **"encerrar"** do central (`MSG_CMD`: tipo = 6) deve **terminar a execução** da aplicação placar.
+
+#### 12.3 Documentação
+
+- Um ficheiro `readme.txt` (ou `.md`) incluído na pasta do projeto, onde indique quais os requisitos implementados.
