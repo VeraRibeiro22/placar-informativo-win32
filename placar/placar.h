@@ -35,6 +35,7 @@ typedef struct {
 
     // Dados do placar
     TCHAR  pipeName[MAX_PIPE_NAME];
+    HANDLE hPipe;           // Handle do named pipe ligado ao central (NULL = desligado)
     BOOL   isConnected;
     DWORD  identificador;
 } PLACAR_CONTEXT;
