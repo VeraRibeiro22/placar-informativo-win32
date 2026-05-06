@@ -9,19 +9,36 @@ int _tmain(int argc, TCHAR* argv[]) {
 		return 1;
 	}
 
-	// garantir que existe apenas uma instância da central de comando em funcionamento
+	// garantir que existe apenas uma instancia da central de comando em funcionamento
 	HANDLE hMutexCentral = CreateMutex(
-		NULL, //segurança padrão
-		TRUE, //começa trancado
+		NULL, //seguranca padrao
+		TRUE, //comeca trancado
 		MUTEX_CENTRAL);
+
+	if (hMutexCentral == NULL) {
+		_tprintf(_T("Erro critico: Nao foi possivel criar o Mutex.\n"));
+		return 1;
+	}
+
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
-		_tprintf(_T("Erro: já existe uma instância do central.\n"));
+		_tprintf(_T("Erro: ja existe uma instancia da central.\n"));
 		CloseHandle(hMutexCentral);
 		return 1;
 	}
 
+
+	//CENTRAL_CONTEXT ctx = { 0 };
+
 	CENTRAL_CONTEXT ctx;
 	ZeroMemory(&ctx, sizeof(CENTRAL_CONTEXT));
+
+	// Forçar a inicialização explicita
+	for (int i = 0; i < MAX_PLACARES; i++) {
+		ctx.placares[i].ativo = FALSE;
+		ctx.placares[i].hPipe = NULL;
+		ctx.placares[i].temAlerta = FALSE;
+	}
+
 	_tcscpy_s(ctx.pipeName, 256, argv[1]);
 	TCHAR buffer[256];
 	_stprintf_s(buffer, 256,PIPE_NAME, argv[1]);
@@ -57,20 +74,31 @@ int _tmain(int argc, TCHAR* argv[]) {
 		CloseHandle(hMutexCentral);
 		return 1;
 	}
-	//FALTA: Criar thread de comandos do administrador (areias)
-
+	
+	HANDLE hThreadCommand = (HANDLE)_beginthreadex(
+		NULL, 0, CommandThread, &ctx, 0, NULL
+	);
+	if (hThreadCommand == NULL) {
+		_tprintf(_T("Erro ao criar thread de comandos (erro %lu)\n"), GetLastError());
+		SetEvent(ctx.hShutdown);
+		CloseHandle(hThreadAccept);
+		CloseHandle(ctx.hShutdown);
+		DeleteCriticalSection(&ctx.csPlacares);
+		CloseHandle(hMutexCentral);
+		return 1;
+	}
 
 	_tprintf(_T("Central iniciada. ...\n"));
 
-
-	//FALTA: Esperar que a thread de comandos do administrador termine (areias)
+	//
+	WaitForSingleObject(hThreadCommand, INFINITE);
 
 	//Esperar 5s para um placar ser aceite
 	WaitForSingleObject(hThreadAccept, 5000);
 
 	// Libertar todos os recursos
 
-	//FALTA: Fechar o handle da thread de comandos do administrador (areias)
+	CloseHandle(hThreadCommand);
 	CloseHandle(hThreadAccept);
 
 	// Fechar todos os pipes ainda abertos
