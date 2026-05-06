@@ -59,17 +59,17 @@ unsigned __stdcall AcceptThread(void* param) {
 		pThreadData->posicao = -1;
 
 		//lançar thread dedicada a um placar
-		HANDLE hThread = (HANDLE)_beginthreadex(
-			NULL, 0, PlacarHandlerThread, pThreadData, 0, NULL
-		);
-		if (hThread == NULL) {
-			_tprintf(_T("[CENTRAL] Erro ao criar thread do placar (erro %lu)\n"), GetLastError());
-			free(pThreadData);
-			CloseHandle(hPipe);
-			continue;
-		}
-		//fechar o handle da tread uma vez que não é necessário
-		CloseHandle(hThread);
+		//HANDLE hThread = (HANDLE)_beginthreadex(
+		//	NULL, 0, PlacarHandlerThread, pThreadData, 0, NULL
+		//);
+		//if (hThread == NULL) {
+		//	_tprintf(_T("[CENTRAL] Erro ao criar thread do placar (erro %lu)\n"), GetLastError());
+		//	free(pThreadData);
+		//	CloseHandle(hPipe);
+		//	continue;
+		//}
+		////fechar o handle da tread uma vez que não é necessário
+		//CloseHandle(hThread);
 	}
 
 	return 0;

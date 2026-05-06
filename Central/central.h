@@ -52,3 +52,9 @@ typedef struct {
 
 // Thread para aceitar placares
 unsigned __stdcall AcceptThread(void* param);
+unsigned __stdcall CommandThread(void* param);
+
+// Protótipos das threads da Central
+unsigned __stdcall AcceptThread(void* param);
+unsigned __stdcall CommandThread(void* param);
+//unsigned __stdcall PlacarHandlerThread(void* param);
