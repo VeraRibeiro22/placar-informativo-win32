@@ -35,9 +35,10 @@ typedef struct {
 
     // Dados do placar
     TCHAR  pipeName[MAX_PIPE_NAME];
-    HANDLE hPipe;           // Handle do named pipe ligado ao central (NULL = desligado)
+    HANDLE hPipe;           // NULL = desligado
     BOOL   isConnected;
     DWORD  identificador;
+    MSG_ALERTA alertaAtual; // Armazena a mensagem de alerta ativa
 } PLACAR_CONTEXT;
 
 
@@ -47,6 +48,9 @@ typedef struct {
 
 // Thread do utilizador para ler comandos da consola
 unsigned __stdcall UserThread(void* param);
+
+// Thread que fica a escutar o Named Pipe a espera de mensagens do Central
+unsigned __stdcall ListenerThread(void* param);
 
 // Thread de alertas para esperar por eventos e gerir o waitable timer
 unsigned __stdcall AlertThread(void* param);
@@ -66,14 +70,7 @@ unsigned __stdcall AlertThread(void* param);
  */
 BOOL ResolvePipeName(int argc, TCHAR* argv[], TCHAR* outPipeName, DWORD size);
 
-/**
- * Lê uma struct MSG_ALERTA do Registry (tipo REG_BINARY)
- *
- * @param pipeName  Nome do valor no Registry
- * @param outAlert  Ponteiro para struct MSG_ALERTA de saída
- * @return TRUE se lido com sucesso
- */
-BOOL ReadAlertFromRegistry(const TCHAR* pipeName, MSG_ALERTA* outAlert);
+
 
 /* ==========================================================================
  * Protótipos — Utilidades

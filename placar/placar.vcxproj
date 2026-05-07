@@ -146,6 +146,7 @@
   </ItemDefinitionGroup>
   <!-- Source Files -->
   <ItemGroup>
+    <ClCompile Include="listener_thread.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="registry.c" />
     <ClCompile Include="user_thread.c" />

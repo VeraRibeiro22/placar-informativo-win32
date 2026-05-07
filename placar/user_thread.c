@@ -57,7 +57,7 @@ unsigned __stdcall UserThread(void* param) {
 
             ctx->hPipe = hPipe;
 
-            // Enviar pedido de ligacao ao central: MSG_CMD tipo 1
+            // Enviar pedido de ligacao ao central: MSG_CMD (tipo 1)
             MSG_CMD msgLigar;
             msgLigar.tipo = 1;
             DWORD bytesWritten;
@@ -88,15 +88,28 @@ unsigned __stdcall UserThread(void* param) {
             ctx->identificador = msgId.identificador;
             ctx->isConnected = TRUE;
             _tprintf(_T("Identificador = %lu\n"), ctx->identificador);
+
+            // Iniciar a listener Thread para receber Alertas/Comandos da Central
+            HANDLE hListener = (HANDLE)_beginthreadex(NULL, 0, ListenerThread, ctx, 0, NULL);
+            if (hListener) CloseHandle(hListener);
         }
         // COMANDO: desligar
-        // Envia MSG_CMD tipo 2 ao central e termina o placar.
+        // Envia MSG_CMD (tipo 2) ao central e termina o placar.
         else if (_tcscmp(command, _T("desligar")) == 0) {
             if (ctx->isConnected && ctx->hPipe != NULL) {
                 MSG_CMD msgDesligar;
                 msgDesligar.tipo = 2;
                 DWORD bytesWritten;
                 WriteFile(ctx->hPipe, &msgDesligar, sizeof(MSG_CMD), &bytesWritten, NULL);
+
+                // Esperar pelo eco (tipo 2) do Central antes de fechar o pipe
+                MSG_CMD msgConfirmacao;
+                DWORD bytesRead;
+                if (ReadFile(ctx->hPipe, &msgConfirmacao, sizeof(MSG_CMD), &bytesRead, NULL)) {
+                    if (msgConfirmacao.tipo == 2) {
+                        _tprintf(_T("Confirmacao de encerramento recebida do Central.\n"));
+                    }
+                }
 
                 CloseHandle(ctx->hPipe);
                 ctx->hPipe = NULL;

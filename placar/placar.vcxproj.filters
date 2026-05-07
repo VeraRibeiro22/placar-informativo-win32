@@ -23,6 +23,9 @@
     <ClCompile Include="alert_thread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="listener_thread.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="placar.h">

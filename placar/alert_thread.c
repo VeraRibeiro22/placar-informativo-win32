@@ -52,9 +52,7 @@ unsigned __stdcall AlertThread(void* param) {
                 continue;
             }
 
-            if (!ReadAlertFromRegistry(ctx->pipeName, &alerta)) {
-                continue;
-            }
+            alerta = ctx->alertaAtual;
 
             FormatTimestamp(timestamp, 64);
             _tprintf(_T("\n%s: '%s'\n> "), timestamp, alerta.msg);
@@ -73,6 +71,15 @@ unsigned __stdcall AlertThread(void* param) {
                 if (innerResult == WAIT_OBJECT_0) { // Timer
                     FormatTimestamp(timestamp, 64);
                     _tprintf(_T("\n%s: '---'\n> "), timestamp);
+
+                    // Notificar o Central que o alerta expirou (tipo 3)
+                    if (ctx->hPipe != NULL) {
+                        MSG_CMD msgFim;
+                        msgFim.tipo = 3;
+                        DWORD bw;
+                        WriteFile(ctx->hPipe, &msgFim, sizeof(MSG_CMD), &bw, NULL);
+                    }
+
                     fflush(stdout);
 
                     alertActive = FALSE;
@@ -82,10 +89,7 @@ unsigned __stdcall AlertThread(void* param) {
 
                     CancelWaitableTimer(ctx->hTimer); // remover timer anterior
 
-                    if (!ReadAlertFromRegistry(ctx->pipeName, &alerta)) {
-                        alertActive = FALSE;
-                        continue;
-                    }
+                    alerta = ctx->alertaAtual;
 
                     FormatTimestamp(timestamp, 64);
                     _tprintf(_T("\n%s: '%s'\n> "), timestamp, alerta.msg);
