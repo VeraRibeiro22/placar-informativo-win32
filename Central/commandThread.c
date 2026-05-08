@@ -4,7 +4,7 @@ unsigned __stdcall CommandThread(void* param) {
     CENTRAL_CONTEXT* ctx = (CENTRAL_CONTEXT*)param;
     TCHAR command[256];
 
-    _tprintf(_T("\nComandos disponiveis: alerta, cancelar, listar, encerrar\n"));
+    _tprintf(_T("\n[Central] Comandos disponiveis: alerta, cancelar, listar, encerrar\n"));
 
     while (1) {
         // Verifica se houve shutdown de outra fonte
@@ -46,14 +46,14 @@ unsigned __stdcall CommandThread(void* param) {
                 }
             }
             if (count == 0) {
-                _tprintf(_T("Nenhum placar conectado neste momento.\n"));
+                _tprintf(_T("[Central] Nenhum placar conectado neste momento.\n"));
             }
             _tprintf(_T("-----------------------------\n"));
             LeaveCriticalSection(&ctx->csPlacares);
         }
         // COMANDO ENCERRAR
         else if (_tcscmp(command, _T("encerrar")) == 0) {
-            _tprintf(_T("\nA encerrar a plataforma central e notificar todos os placares...\n"));
+            _tprintf(_T("\n [Central] A encerrar a plataforma central e notificar todos os placares...\n"));
             
             EnterCriticalSection(&ctx->csPlacares);
             MSG_CMD msgEncerrar;
@@ -64,7 +64,7 @@ unsigned __stdcall CommandThread(void* param) {
                 if (ctx->placares[i].ativo && ctx->placares[i].hPipe != NULL) {
                     // Envia a mensagem tipo 6 (encerrar plataforma) para o placar
                     if (!WriteFile(ctx->placares[i].hPipe, &msgEncerrar, sizeof(MSG_CMD), &bytesWritten, NULL)) {
-                        _tprintf(_T("Erro ao notificar encerramento ao placar ID %lu (erro %lu)\n"), 
+                        _tprintf(_T("[Central] Erro ao notificar encerramento ao placar ID %lu (erro %lu)\n"), 
                                  ctx->placares[i].identificador, GetLastError());
                     }
                 }
@@ -79,10 +79,10 @@ unsigned __stdcall CommandThread(void* param) {
         else {
             // Verificar de forma simples se comeca com os comandos que vamos implementar depois
             if (_tcsncmp(command, _T("alerta"), 6) == 0 || _tcsncmp(command, _T("cancelar"), 8) == 0) {
-                _tprintf(_T("Comando '%s' ainda em implementacao (proxima etapa).\n"), command);
+                _tprintf(_T("[Central] Comando '%s' ainda em implementacao (proxima etapa).\n"), command);
             } else {
-                _tprintf(_T("Comando desconhecido: '%s'\n"), command);
-                _tprintf(_T("Comandos disponiveis: alerta, cancelar, listar, encerrar\n"));
+                _tprintf(_T("[Central] Comando desconhecido: '%s'\n"), command);
+                _tprintf(_T("[Central] Comandos disponiveis: alerta, cancelar, listar, encerrar\n"));
             }
         }
     }
