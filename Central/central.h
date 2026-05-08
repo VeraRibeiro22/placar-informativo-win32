@@ -4,6 +4,7 @@
 #include <tchar.h>
 #include <stdio.h>
 #include <process.h>
+#include <stdlib.h>
 
 #include "../common/ipc_structs.h"
 
