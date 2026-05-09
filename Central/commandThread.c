@@ -120,20 +120,26 @@ unsigned __stdcall CommandThread(void* param) {
                     msgAlerta.tipo = 4;
                     _tcscpy_s(msgAlerta.msg, 140, msg);
                     msgAlerta.duracao = duracao;
-
+                    DWORD num = 0;
                     EnterCriticalSection(&ctx->csPlacares);
                     if (id == 0) {
                         // Enviar para todos os placares ativos
                         for (int i = 0; i < MAX_PLACARES; i++) {
                             if (ctx->placares[i].ativo && ctx->placares[i].hPipe != NULL) {
                                 EnviarMensagemPlacar(ctx->placares[i].hPipe, &msgAlerta, sizeof(MSG_ALERTA));
+                                num++;
                                 // atualizar estado local 
                                 ctx->placares[i].temAlerta = TRUE;
                                 _tcscpy_s(ctx->placares[i].alertaMsg, 140, msg);
                                 ctx->placares[i].alertaDuracao = duracao;
                             }
                         }
-                        _tprintf(_T("[CENTRAL] Alerta enviado para todos os placares ativos.\n"));
+                        if (num == 0) {
+                            _tprintf(_T("[CENTRAL] Nao existem placares ativos.\n"));
+                        }
+                        else {
+                            _tprintf(_T("[CENTRAL] Alerta enviado para todos os placares ativos (&lu).\n"),num);
+                        }
                     } else {
                         BOOL found = FALSE;
                         for (int i = 0; i < MAX_PLACARES; i++) {

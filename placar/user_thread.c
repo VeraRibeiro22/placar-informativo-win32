@@ -31,11 +31,11 @@ unsigned __stdcall UserThread(void* param) {
                     0,                    
                     NULL,                 
                     OPEN_EXISTING,        
-                    FILE_FLAG_OVERLAPPED, // <--- ADICIONADO AQUI
+                    FILE_FLAG_OVERLAPPED, 
                     NULL
                 );
                 if (hPipe != INVALID_HANDLE_VALUE) break;
-
+                
                 if (GetLastError() != ERROR_PIPE_BUSY) {
                     _tprintf(_T("Erro: nao foi possivel ligar ao central (erro %lu)\n"), GetLastError());
                     break;
