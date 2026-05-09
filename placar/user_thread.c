@@ -32,7 +32,7 @@ unsigned __stdcall UserThread(void* param) {
                     0,                    
                     NULL,                 
                     OPEN_EXISTING,        
-                    0,                    
+                    FILE_FLAG_OVERLAPPED, // <--- ADICIONADO AQUI
                     NULL
                 );
                 if (hPipe != INVALID_HANDLE_VALUE) break;
@@ -60,8 +60,7 @@ unsigned __stdcall UserThread(void* param) {
             // Enviar pedido de ligacao ao central: MSG_CMD (tipo 1)
             MSG_CMD msgLigar;
             msgLigar.tipo = 1;
-            DWORD bytesWritten;
-            if (!WriteFile(hPipe, &msgLigar, sizeof(MSG_CMD), &bytesWritten, NULL)) {
+            if (!EnviarMensagemCentral(hPipe, &msgLigar, sizeof(MSG_CMD))) {
                 _tprintf(_T("Erro ao enviar pedido de ligacao (erro %lu)\n"), GetLastError());
                 CloseHandle(hPipe);
                 ctx->hPipe = NULL;
@@ -71,7 +70,18 @@ unsigned __stdcall UserThread(void* param) {
             // Aguardar resposta do central: MSG_ID (tipo 7) com o identificador atribuido
             MSG_ID msgId;
             DWORD bytesRead;
-            if (!ReadFile(hPipe, &msgId, sizeof(MSG_ID), &bytesRead, NULL)) {
+            OVERLAPPED ovRead;
+            ZeroMemory(&ovRead, sizeof(OVERLAPPED));
+            ovRead.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+
+            BOOL bRead = ReadFile(hPipe, &msgId, sizeof(MSG_ID), &bytesRead, &ovRead);
+            if (!bRead && GetLastError() == ERROR_IO_PENDING) {
+                WaitForSingleObject(ovRead.hEvent, INFINITE);
+                bRead = GetOverlappedResult(hPipe, &ovRead, &bytesRead, FALSE);
+            }
+            CloseHandle(ovRead.hEvent);
+
+            if (!bRead) {
                 _tprintf(_T("Erro ao receber identificador do central (erro %lu)\n"), GetLastError());
                 CloseHandle(hPipe);
                 ctx->hPipe = NULL;
@@ -94,26 +104,17 @@ unsigned __stdcall UserThread(void* param) {
             if (hListener) CloseHandle(hListener);
         }
         // COMANDO: desligar
-        // Envia MSG_CMD (tipo 2) ao central e termina o placar.
+        // Envia MSG_CMD (tipo 2) ao central como aviso (fire-and-forget).
+        // Não aguarda confirmação — o placar encerra imediatamente após notificar.
         else if (_tcscmp(command, _T("desligar")) == 0) {
             if (ctx->isConnected && ctx->hPipe != NULL) {
                 MSG_CMD msgDesligar;
                 msgDesligar.tipo = 2;
-                DWORD bytesWritten;
-                WriteFile(ctx->hPipe, &msgDesligar, sizeof(MSG_CMD), &bytesWritten, NULL);
-
-                // Esperar pelo eco (tipo 2) do Central antes de fechar o pipe
-                MSG_CMD msgConfirmacao;
-                DWORD bytesRead;
-                if (ReadFile(ctx->hPipe, &msgConfirmacao, sizeof(MSG_CMD), &bytesRead, NULL)) {
-                    if (msgConfirmacao.tipo == 2) {
-                        _tprintf(_T("Confirmacao de encerramento recebida do Central.\n"));
-                    }
-                }
-
-                CloseHandle(ctx->hPipe);
-                ctx->hPipe = NULL;
+                EnviarMensagemCentral(ctx->hPipe, &msgDesligar, sizeof(MSG_CMD));
+                ctx->isConnected = FALSE;
             }
+            // Sinalizar shutdown para acordar AlertThread (hShutdown é auto-reset).
+            // A ListenerThread terminará sozinha quando o pipe fechar do lado da Central.
             SetEvent(ctx->hShutdown);
             break;
         }

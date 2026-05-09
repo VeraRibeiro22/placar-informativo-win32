@@ -1,5 +1,33 @@
 #include "placar.h"
 
+BOOL EnviarMensagemCentral(HANDLE hPipe, void* pData, DWORD cbData) {
+    if (hPipe == NULL || hPipe == INVALID_HANDLE_VALUE) {
+        return FALSE;
+    }
+
+    OVERLAPPED ov;
+    ZeroMemory(&ov, sizeof(OVERLAPPED));
+    ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (ov.hEvent == NULL) return FALSE;
+
+    DWORD bytesWritten;
+    BOOL bResult = WriteFile(hPipe, pData, cbData, &bytesWritten, &ov);
+
+    if (!bResult && GetLastError() == ERROR_IO_PENDING) {
+        // Espera pela operacao overlapped terminar
+        DWORD waitRes = WaitForSingleObject(ov.hEvent, INFINITE);
+        if (waitRes == WAIT_OBJECT_0) {
+            bResult = GetOverlappedResult(hPipe, &ov, &bytesWritten, FALSE);
+        } else {
+            CancelIo(hPipe);
+            bResult = FALSE;
+        }
+    }
+
+    CloseHandle(ov.hEvent);
+    return bResult;
+}
+
 int _tmain(int argc, TCHAR* argv[]) {
     _tprintf(_T("=== Placar Informativo ===\n"));
 
@@ -26,7 +54,7 @@ int _tmain(int argc, TCHAR* argv[]) {
         NULL,
         TRUE,                   // manual reset
         FALSE,                  // não sinalizado
-        EVENT_NOTIFICAR_NAME
+        NULL                    // evento anónimo
     );
     if (ctx.hNotificar == NULL) {
         _tprintf(_T("Erro ao criar evento 'notificar' (erro %lu)\n"), GetLastError());

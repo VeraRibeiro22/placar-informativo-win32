@@ -17,8 +17,8 @@
 // Nome do valor REG_SZ que guarda o nome do pipe
 #define REGISTRY_NPIPE_VALUE    _T("NPIPE")
 
-// Nome do evento manual-reset para simular chegada de alerta
-#define EVENT_NOTIFICAR_NAME    _T("notificar")
+// Nome do evento manual-reset para chegada de alerta (agora anónimo)
+// #define EVENT_NOTIFICAR_NAME    _T("notificar")
 
 #define MAX_PIPE_NAME           256
 
@@ -69,6 +69,12 @@ unsigned __stdcall AlertThread(void* param);
  * @return TRUE se resolvido com sucesso
  */
 BOOL ResolvePipeName(int argc, TCHAR* argv[], TCHAR* outPipeName, DWORD size);
+
+/**
+ * Envia dados para a Central de forma assíncrona (OVERLAPPED).
+ * Retorna TRUE em caso de sucesso, FALSE caso contrário.
+ */
+BOOL EnviarMensagemCentral(HANDLE hPipe, void* pData, DWORD cbData);
 
 
 

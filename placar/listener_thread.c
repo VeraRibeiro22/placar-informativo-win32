@@ -3,6 +3,16 @@
 unsigned __stdcall ListenerThread(void* param) {
     PLACAR_CONTEXT* ctx = (PLACAR_CONTEXT*)param;
 
+    OVERLAPPED ov;
+    ZeroMemory(&ov, sizeof(OVERLAPPED));
+    ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (ov.hEvent == NULL) {
+        _tprintf(_T("\n[Placar] Erro ao criar evento OVERLAPPED na ListenerThread.\n"));
+        return 1;
+    }
+
+    HANDLE waitHandles[2] = { ov.hEvent, ctx->hShutdown };
+
     while (1) {
         HANDLE hPipe = ctx->hPipe;
         if (hPipe == NULL) {
@@ -15,15 +25,32 @@ unsigned __stdcall ListenerThread(void* param) {
         DWORD bytesRead;
 
         // =================================================================
-        // BLOQUEIO: A thread fica aqui a dormir ate a Central enviar algo
+        // Leitura Assincrona: A thread espera por dados da Central ou shutdown
         // =================================================================
-        if (!ReadFile(hPipe, buffer, sizeof(buffer), &bytesRead, NULL) || bytesRead == 0) {
-            // Se o ReadFile falhar, significa que o tubo partiu (Central encerrou ou crashou)
-            if (ctx->isConnected) {
-                _tprintf(_T("\n[Aviso] A ligacao ao Central foi perdida!\n> "));
-                ctx->isConnected = FALSE;
-                SetEvent(ctx->hShutdown); // Iniciar encerramento do Placar
+        BOOL bRead = ReadFile(hPipe, buffer, sizeof(buffer), &bytesRead, &ov);
+        DWORD err = GetLastError();
+
+        if (!bRead && err == ERROR_IO_PENDING) {
+            DWORD waitRes = WaitForMultipleObjects(2, waitHandles, FALSE, INFINITE);
+            if (waitRes == WAIT_OBJECT_0) {
+                bRead = GetOverlappedResult(hPipe, &ov, &bytesRead, FALSE);
+                ResetEvent(ov.hEvent);
+            } else if (waitRes == WAIT_OBJECT_0 + 1) {
+                // Comando de shutdown recebido enquanto esperava leitura
+                CancelIo(hPipe);
+                break;
+            } else {
+                CancelIo(hPipe);
+                break; // Erro no WaitForMultipleObjects
             }
+        }
+
+        if (!bRead || bytesRead == 0) {
+            // Pipe quebrou: Central encerrou, ou o placar fez desligar e a Central fechou o pipe.
+            // Garantir que AlertThread acorda e termina (hShutdown auto-reset).
+            _tprintf(_T("\n[Placar] Ligacao ao Central terminada.\n"));
+            ctx->isConnected = FALSE;
+            SetEvent(ctx->hShutdown);
             break;
         }
 
@@ -31,6 +58,10 @@ unsigned __stdcall ListenerThread(void* param) {
         BYTE tipo = buffer[0];
 
         switch (tipo) {
+            case 2: // MSG_CMD tipo 2: eco do desligar (pode chegar antes do pipe fechar)
+            {      // Ignorar — o placar ja encerrou de forma fire-and-forget
+                break;
+            }
             case 4: // MSG_ALERTA (Novo alerta recebido)
             {
                 MSG_ALERTA* alertaRecebido = (MSG_ALERTA*)buffer;
@@ -38,9 +69,8 @@ unsigned __stdcall ListenerThread(void* param) {
                 // 1. Guardar a struct no contexto partilhado para a alert_thread
                 ctx->alertaAtual = *alertaRecebido;
                 
-                // 2. Fazer o Eco obrigatrio (enviar a mesma struct de volta)
-                DWORD bytesWritten;
-                WriteFile(hPipe, alertaRecebido, sizeof(MSG_ALERTA), &bytesWritten, NULL);
+                // 2. Fazer o Eco obrigatorio (enviar a mesma struct de volta)
+                EnviarMensagemCentral(hPipe, alertaRecebido, sizeof(MSG_ALERTA));
 
                 // 3. Tocar a "campainha" para acordar a alert_thread!
                 SetEvent(ctx->hNotificar);
@@ -51,8 +81,7 @@ unsigned __stdcall ListenerThread(void* param) {
                 // 1. Fazer o Eco obrigatorio (enviar MSG_CMD tipo 5 de volta)
                 MSG_CMD msgCancelar;
                 msgCancelar.tipo = 5;
-                DWORD bytesWritten;
-                WriteFile(hPipe, &msgCancelar, sizeof(MSG_CMD), &bytesWritten, NULL);
+                EnviarMensagemCentral(hPipe, &msgCancelar, sizeof(MSG_CMD));
 
                 // 2. Limpar a mensagem atual
                 ZeroMemory(&ctx->alertaAtual, sizeof(MSG_ALERTA));
@@ -77,5 +106,6 @@ unsigned __stdcall ListenerThread(void* param) {
         }
     }
 
+    CloseHandle(ov.hEvent);
     return 0;
 }

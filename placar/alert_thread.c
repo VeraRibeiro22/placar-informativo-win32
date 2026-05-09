@@ -76,8 +76,7 @@ unsigned __stdcall AlertThread(void* param) {
                     if (ctx->hPipe != NULL) {
                         MSG_CMD msgFim;
                         msgFim.tipo = 3;
-                        DWORD bw;
-                        WriteFile(ctx->hPipe, &msgFim, sizeof(MSG_CMD), &bw, NULL);
+                        EnviarMensagemCentral(ctx->hPipe, &msgFim, sizeof(MSG_CMD));
                     }
 
                     fflush(stdout);
