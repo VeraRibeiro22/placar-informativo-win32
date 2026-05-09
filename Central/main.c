@@ -67,7 +67,7 @@ int _tmain(int argc, TCHAR* argv[]) {
 		NULL, 0, AcceptThread, &ctx, 0, NULL
 	);
 	if (hThreadAccept == NULL) {
-		_tprintf(_T("Erro ao criar thread de aceitação de placares (erro %lu)\n"), GetLastError());
+		_tprintf(_T("Erro ao criar thread de aceitacao de placares (erro %lu)\n"), GetLastError());
 		SetEvent(ctx.hShutdown);
 		CloseHandle(ctx.hShutdown);
 		DeleteCriticalSection(&ctx.csPlacares);

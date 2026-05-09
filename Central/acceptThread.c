@@ -22,7 +22,7 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 		WaitForSingleObject(ovRead.hEvent, INFINITE);
 		GetOverlappedResult(hPipe, &ovRead, &bytesRead, FALSE);
 	}
-	
+	DWORD idAtribuido = 0;
 	//Procurar posicao livre no array de placares
 	EnterCriticalSection(&ctx->csPlacares);
 	for (int i = 0; i < MAX_PLACARES; i++) {
@@ -33,6 +33,7 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 			ctx->placares[i].temAlerta = FALSE;
 			ctx->numPlacares++;
 			tdata->posicao = i;
+			idAtribuido = ctx->placares[i].identificador;
 			break;
 		}
 	}
@@ -49,7 +50,7 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 	int pos = tdata->posicao;
 	MSG_ID msgId;
 	msgId.tipo = 7;
-	msgId.identificador = ctx->placares[pos].identificador;
+	msgId.identificador = idAtribuido;
 
 	OVERLAPPED ovWrite;
 	ZeroMemory(&ovWrite, sizeof(OVERLAPPED));
@@ -126,7 +127,7 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 				EnterCriticalSection(&ctx->csPlacares);
 				ctx->placares[pos].temAlerta = TRUE;
 				LeaveCriticalSection(&ctx->csPlacares);
-				_tprintf(_T("[CENTRAL] Placar com ID %lu confirmou receção de alerta '%s'.\n"), ctx->placares[pos].identificador, msg_alerta_eco->msg);
+				_tprintf(_T("[CENTRAL] Placar com ID %lu confirmou rececao de alerta '%s'.\n"), ctx->placares[pos].identificador, msg_alerta_eco->msg);
 				break;
 			}
 			case 5: // MSG_CMD  tipo 5 = eco do cancelar
@@ -158,7 +159,7 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 	ctx->placares[pos].ativo = FALSE;
 	ctx->placares[pos].hPipe = NULL;
 	ctx->placares[pos].temAlerta = FALSE;
-	ctx->numPlacares--;
+	if (ctx->numPlacares > 0) ctx->numPlacares--;
 	LeaveCriticalSection(&ctx->csPlacares);
 	CloseHandle(ovRead.hEvent);
 	CloseHandle(ovWrite.hEvent);
@@ -169,6 +170,12 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 
 unsigned __stdcall AcceptThread(void* param) {
 	CENTRAL_CONTEXT* ctx = (CENTRAL_CONTEXT*)param;
+	HANDLE hConnectPipeEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+
+	if(hConnectPipeEvent == NULL) {
+		_tprintf(_T("[CENTRAL] Erro ao criar evento de conexao do named pipe (erro %lu)\n"), GetLastError());
+		return 1;
+	}
 
 	while (1) {
 		//verificar shutdown
@@ -191,22 +198,39 @@ unsigned __stdcall AcceptThread(void* param) {
 		}
 
 
-		_tprintf(_T("[CENTRAL] A aguardar ligação de placar...\n"));
+		_tprintf(_T("[CENTRAL] A aguardar ligacao de placar...\n"));
 
-		//loop fica bloqueado aqui até um placar ligar ou até evento shutdown
-		BOOL isConnected = ConnectNamedPipe(hPipe, NULL);
+		// ConnectNamedPipe assíncrono para não bloquear indefinidamente
+		ResetEvent(hConnectPipeEvent);
+		OVERLAPPED ovConnect;
+		ZeroMemory(&ovConnect, sizeof(OVERLAPPED));
+		ovConnect.hEvent = hConnectPipeEvent;
+		BOOL isConnected = ConnectNamedPipe(hPipe, &ovConnect);
 
-		//verificar shutdown
+		if (!isConnected) {
+			if (GetLastError() == ERROR_IO_PENDING) {
+				//aguardar ligacao de um placar ou evento shutdown
+				HANDLE handlesWait[2] = { hConnectPipeEvent,ctx->hShutdown };
+				DWORD waitResult = WaitForMultipleObjects(2, handlesWait, FALSE, INFINITE);
+				if (waitResult == WAIT_OBJECT_0 + 1) {
+					CancelIo(hPipe);
+					CloseHandle(hPipe);
+					break;
+				}
+			}
+		}
+		else if (!isConnected && GetLastError() != ERROR_PIPE_CONNECTED) {
+			_tprintf(_T("[CENTRAL] Erro ao conectar named pipe (erro %lu)\n"), GetLastError());
+			CloseHandle(hPipe);
+			continue;
+		}
+
+		//verificar shutdown mais uma vez antes de lançar thread
 		if (WaitForSingleObject(ctx->hShutdown, 0) == WAIT_OBJECT_0) {
 			CloseHandle(hPipe);
 			break;
 		}
 
-		if (!isConnected && GetLastError() != ERROR_PIPE_CONNECTED) {
-			_tprintf(_T("[CENTRAL] Erro ao conectar named pipe (erro %lu)\n"), GetLastError());
-			CloseHandle(hPipe);
-			continue;
-		}
 
 
 		//alocar memória para parâmetro da thread PlacarHandlerThread
@@ -235,6 +259,6 @@ unsigned __stdcall AcceptThread(void* param) {
 		//fechar o handle da tread uma vez que não é necessário
 		CloseHandle(hThread);
 	}
-
+	CloseHandle(hConnectPipeEvent);
 	return 0;
 }
