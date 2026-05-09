@@ -39,6 +39,7 @@ typedef struct {
     BOOL   isConnected;
     DWORD  identificador;
     MSG_ALERTA alertaAtual; // Armazena a mensagem de alerta ativa
+    HANDLE		hUserThread;
 } PLACAR_CONTEXT;
 
 

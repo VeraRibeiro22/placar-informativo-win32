@@ -100,6 +100,7 @@ unsigned __stdcall ListenerThread(void* param) {
             {
                 _tprintf(_T("\n[CENTRAL] Ordem de encerramento geral recebida. A desligar...\n"));
                 SetEvent(ctx->hShutdown);
+                CancelSynchronousIo(ctx->hUserThread);
                 break;
             }
             default:
