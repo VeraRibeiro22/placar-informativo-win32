@@ -90,8 +90,10 @@ unsigned __stdcall ListenerThread(void* param) {
                 // O Win32 permite cancelar timers a partir de qualquer thread!
                 CancelWaitableTimer(ctx->hTimer);
                 
-                // 4. Mostrar o "---" na consola conforme exigido (sem hora)
-                _tprintf(_T("\n---\n> "));
+                // 4. Mostrar o "---" na consola com timestamp
+                TCHAR timestamp[64];
+                FormatTimestamp(timestamp, 64);
+                _tprintf(_T("%s: '---'\n"), timestamp);
                 break;
             }
             case 6: // MSG_CMD (Encerrar plataforma)
@@ -101,7 +103,7 @@ unsigned __stdcall ListenerThread(void* param) {
                 break;
             }
             default:
-                _tprintf(_T("\n[Aviso] Mensagem desconhecida recebida do Central (tipo %d)\n> "), tipo);
+                _tprintf(_T("[Aviso] Mensagem desconhecida recebida do Central (tipo %d)\n"), tipo);
                 break;
         }
     }

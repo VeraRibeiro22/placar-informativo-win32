@@ -198,7 +198,6 @@ unsigned __stdcall AcceptThread(void* param) {
 		}
 
 
-		_tprintf(_T("[CENTRAL] A aguardar ligacao de placar...\n"));
 
 		// ConnectNamedPipe assíncrono para não bloquear indefinidamente
 		ResetEvent(hConnectPipeEvent);

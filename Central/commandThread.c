@@ -24,7 +24,7 @@ unsigned __stdcall CommandThread(void* param) {
     CENTRAL_CONTEXT* ctx = (CENTRAL_CONTEXT*)param;
     TCHAR command[256];
 
-    _tprintf(_T("\n[Central] Comandos disponiveis: alerta, cancelar, listar, encerrar\n"));
+    _tprintf(_T("\n[CENTRAL] Comandos disponiveis: alerta, cancelar, listar, encerrar\n"));
 
     while (1) {
         // Verifica se houve shutdown de outra fonte
@@ -32,7 +32,7 @@ unsigned __stdcall CommandThread(void* param) {
             break;
         }
 
-        _tprintf(_T("Central> "));
+
 
         if (_fgetts(command, 256, stdin) == NULL) {
             break;
@@ -66,14 +66,14 @@ unsigned __stdcall CommandThread(void* param) {
                 }
             }
             if (count == 0) {
-                _tprintf(_T("[Central] Nenhum placar conectado neste momento.\n"));
+                _tprintf(_T("[CENTRAL] Nenhum placar conectado neste momento.\n"));
             }
             _tprintf(_T("-----------------------------\n"));
             LeaveCriticalSection(&ctx->csPlacares);
         }
         // COMANDO ENCERRAR
         else if (_tcscmp(command, _T("encerrar")) == 0) {
-            _tprintf(_T("\n [Central] A encerrar a plataforma central e notificar todos os placares...\n"));
+            _tprintf(_T("\n [CENTRAL] A encerrar a plataforma central e notificar todos os placares...\n"));
             
             EnterCriticalSection(&ctx->csPlacares);
             MSG_CMD msgEncerrar;
@@ -83,7 +83,7 @@ unsigned __stdcall CommandThread(void* param) {
                 if (ctx->placares[i].ativo && ctx->placares[i].hPipe != NULL) {
                     // Envia a mensagem tipo 6 (encerrar plataforma) para o placar
                     if (!EnviarMensagemPlacar(ctx->placares[i].hPipe, &msgEncerrar, sizeof(MSG_CMD))) {
-                        _tprintf(_T("[Central] Erro ao notificar encerramento ao placar ID %lu (erro %lu)\n"), 
+                        _tprintf(_T("[CENTRAL] Erro ao notificar encerramento ao placar ID %lu (erro %lu)\n"), 
                                  ctx->placares[i].identificador, GetLastError());
                     }
                 }
@@ -133,7 +133,7 @@ unsigned __stdcall CommandThread(void* param) {
                                 ctx->placares[i].alertaDuracao = duracao;
                             }
                         }
-                        _tprintf(_T("[Central] Alerta enviado para todos os placares ativos.\n"));
+                        _tprintf(_T("[CENTRAL] Alerta enviado para todos os placares ativos.\n"));
                     } else {
                         BOOL found = FALSE;
                         for (int i = 0; i < MAX_PLACARES; i++) {
@@ -144,20 +144,20 @@ unsigned __stdcall CommandThread(void* param) {
                                 ctx->placares[i].temAlerta = TRUE;
                                 _tcscpy_s(ctx->placares[i].alertaMsg, 140, msg);
                                 ctx->placares[i].alertaDuracao = duracao;
-                                _tprintf(_T("[Central] Alerta enviado ao placar ID %lu.\n"), id);
+                                _tprintf(_T("[CENTRAL] Alerta enviado ao placar ID %lu.\n"), id);
                                 break;
                             }
                         }
                         if (!found) {
-                            _tprintf(_T("[Central] Placar com ID %lu nao encontrado ou inativo.\n"), id);
+                            _tprintf(_T("[CENTRAL] Placar com ID %lu nao encontrado ou inativo.\n"), id);
                         }
                     }
                     LeaveCriticalSection(&ctx->csPlacares);
                 } else {
-                    _tprintf(_T("[Central] Formato invalido. Uso: alerta \"<msg>\" <duracao> <id>\n"));
+                    _tprintf(_T("[CENTRAL] Formato invalido. Uso: alerta \"<msg>\" <duracao> <id>\n"));
                 }
             } else {
-                _tprintf(_T("[Central] A mensagem deve estar entre aspas! Uso: alerta \"<msg>\" <duracao> <id>\n"));
+                _tprintf(_T("[CENTRAL] A mensagem deve estar entre aspas! Uso: alerta \"<msg>\" <duracao> <id>\n"));
             }
         }
         // COMANDO CANCELAR
@@ -169,29 +169,33 @@ unsigned __stdcall CommandThread(void* param) {
                 for (int i = 0; i < MAX_PLACARES; i++) {
                     if (ctx->placares[i].ativo && ctx->placares[i].identificador == id && ctx->placares[i].hPipe != NULL) {
                         found = TRUE;
+                        if (!ctx->placares[i].temAlerta) {
+                            _tprintf(_T("[CENTRAL] Placar ID %lu nao tem alerta ativo para cancelar.\n"), id);
+                            break;
+                        }
                         MSG_CMD msgCancelar;
                         msgCancelar.tipo = 5;
                         if (EnviarMensagemPlacar(ctx->placares[i].hPipe, &msgCancelar, sizeof(MSG_CMD))) {
-                            _tprintf(_T("[Central] Comando cancelar enviado ao placar ID %lu.\n"), id);
+                            _tprintf(_T("[CENTRAL] Comando cancelar enviado ao placar ID %lu.\n"), id);
                             ctx->placares[i].temAlerta = FALSE;
                         } else {
-                            _tprintf(_T("[Central] Erro ao enviar comando cancelar (erro %lu)\n"), GetLastError());
+                            _tprintf(_T("[CENTRAL] Erro ao enviar comando cancelar (erro %lu)\n"), GetLastError());
                         }
                         break;
                     }
                 }
                 LeaveCriticalSection(&ctx->csPlacares);
                 if (!found) {
-                    _tprintf(_T("[Central] Placar com ID %lu nao encontrado ou inativo.\n"), id);
+                    _tprintf(_T("[CENTRAL] Placar com ID %lu nao encontrado ou inativo.\n"), id);
                 }
             } else {
-                _tprintf(_T("[Central] Formato invalido. Uso: cancelar <id>\n"));
+                _tprintf(_T("[CENTRAL] Formato invalido. Uso: cancelar <id>\n"));
             }
         }
         // OUTROS COMANDOS
         else {
-            _tprintf(_T("[Central] Comando desconhecido: '%s'\n"), command);
-            _tprintf(_T("[Central] Comandos disponiveis: alerta \"<msg>\" <dur> <id>, cancelar <id>, listar, encerrar\n"));
+            _tprintf(_T("[CENTRAL] Comando desconhecido: '%s'\n"), command);
+            _tprintf(_T("[CENTRAL] Comandos disponiveis: alerta \"<msg>\" <dur> <id>, cancelar <id>, listar, encerrar\n"));
         }
     }
 

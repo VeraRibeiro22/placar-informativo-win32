@@ -1,7 +1,6 @@
 #include "central.h"
 
 int _tmain(int argc, TCHAR* argv[]) {
-	_tprintf(_T("=== Central ===\n"));
 
 	if (argc != 2) {
 		_tprintf(_T("Erro: Deve indicar o nome do pipe a utilizar\n"));
@@ -25,7 +24,7 @@ int _tmain(int argc, TCHAR* argv[]) {
 		CloseHandle(hMutexCentral);
 		return 1;
 	}
-
+	_tprintf(_T("=== Central ===\n"));
 
 	//CENTRAL_CONTEXT ctx = { 0 };
 

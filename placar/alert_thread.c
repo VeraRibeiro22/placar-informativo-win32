@@ -55,7 +55,7 @@ unsigned __stdcall AlertThread(void* param) {
             alerta = ctx->alertaAtual;
 
             FormatTimestamp(timestamp, 64);
-            _tprintf(_T("\n%s: '%s'\n> "), timestamp, alerta.msg);
+            _tprintf(_T("%s: '%s'\n"), timestamp, alerta.msg);
 
             fflush(stdout);
 
@@ -70,7 +70,7 @@ unsigned __stdcall AlertThread(void* param) {
 
                 if (innerResult == WAIT_OBJECT_0) { // Timer
                     FormatTimestamp(timestamp, 64);
-                    _tprintf(_T("\n%s: '---'\n> "), timestamp);
+                    _tprintf(_T("%s: '---'\n"), timestamp);
 
                     // Notificar o Central que o alerta expirou (tipo 3)
                     if (ctx->hPipe != NULL) {
@@ -91,7 +91,7 @@ unsigned __stdcall AlertThread(void* param) {
                     alerta = ctx->alertaAtual;
 
                     FormatTimestamp(timestamp, 64);
-                    _tprintf(_T("\n%s: '%s'\n> "), timestamp, alerta.msg);
+                    _tprintf(_T("%s: '%s'\n"), timestamp, alerta.msg);
                     fflush(stdout);
                     if (!ConfigureTimer(ctx->hTimer, alerta.duracao)) {
                         alertActive = FALSE;

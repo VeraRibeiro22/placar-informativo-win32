@@ -29,7 +29,6 @@ BOOL EnviarMensagemCentral(HANDLE hPipe, void* pData, DWORD cbData) {
 }
 
 int _tmain(int argc, TCHAR* argv[]) {
-    _tprintf(_T("=== Placar Informativo ===\n"));
 
     PLACAR_CONTEXT ctx;
     ZeroMemory(&ctx, sizeof(PLACAR_CONTEXT));
@@ -50,7 +49,7 @@ int _tmain(int argc, TCHAR* argv[]) {
         }
         // WAIT_TIMEOUT: central existe mas esta ocupado -- continua
     }
-
+    _tprintf(_T("=== Placar Informativo ===\n"));
     ctx.hShutdown = CreateEvent(
         NULL,
         FALSE,      // auto reset

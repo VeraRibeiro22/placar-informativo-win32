@@ -7,7 +7,6 @@ unsigned __stdcall UserThread(void* param) {
     _tprintf(_T("Comandos disponiveis: ligar, desligar\n"));
 
     while (1) {
-        _tprintf(_T("> "));
         if (_fgetts(command, 64, stdin) == NULL) {
             break;
         }
