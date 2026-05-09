@@ -45,7 +45,7 @@ unsigned __stdcall UserThread(void* param) {
 
             if (hPipe == INVALID_HANDLE_VALUE) {
                 _tprintf(_T("Erro: falha definitiva ao ligar ao central.\n"));
-                continue;
+                break;
             }
 
             // Configurar o modo de leitura do pipe como MESSAGE 

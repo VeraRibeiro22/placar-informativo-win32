@@ -41,18 +41,10 @@ int _tmain(int argc, TCHAR* argv[]) {
     // Verificar se o Central esta em execucao antes de continuar
     TCHAR pipePath[MAX_PIPE_NAME];
     _stprintf_s(pipePath, MAX_PIPE_NAME, _T("\\\\.\\pipe\\%s"), ctx.pipeName);
-    if (!WaitNamedPipe(pipePath, 1)) {
-        if (GetLastError() == ERROR_FILE_NOT_FOUND) {
-            _tprintf(_T("Erro: O Central nao esta em execucao.\n"));
-            _tprintf(_T("Inicie primeiro: central.exe %s\n"), ctx.pipeName);
-            return 1;
-        }
-        // WAIT_TIMEOUT: central existe mas esta ocupado -- continua
-    }
     _tprintf(_T("=== Placar Informativo ===\n"));
     ctx.hShutdown = CreateEvent(
         NULL,
-        FALSE,      // auto reset
+        TRUE,      
         FALSE,      // não sinalizado
         NULL
     );
@@ -96,7 +88,7 @@ int _tmain(int argc, TCHAR* argv[]) {
         CloseHandle(ctx.hShutdown);
         return 1;
     }
-
+    ctx.hUserThread = hThreadUser;
     HANDLE hThreadAlert = (HANDLE)_beginthreadex(
         NULL, 0, AlertThread, &ctx, 0, NULL
     );
