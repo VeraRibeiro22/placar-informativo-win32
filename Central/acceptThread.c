@@ -15,6 +15,7 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 		_tprintf(_T("[CENTRAL] Erro ao criar evento de leitura (erro %lu)\n"), GetLastError());
 		CloseHandle(hPipe);
 		free(tdata);
+		ReleaseSemaphore(ctx->hSemPlacares, 1, NULL);
 		return 1;
 	}
 	res = ReadFile(hPipe, &msgLigar, sizeof(MSG_CMD), NULL, &ovRead);
@@ -43,6 +44,7 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 		CloseHandle(ovRead.hEvent);
 		CloseHandle(hPipe);
 		free(tdata);
+		ReleaseSemaphore(ctx->hSemPlacares, 1, NULL);
 		return 1;
 	}
 
@@ -60,6 +62,7 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 		CloseHandle(ovRead.hEvent);
 		CloseHandle(hPipe);
 		free(tdata);
+		ReleaseSemaphore(ctx->hSemPlacares, 1, NULL);
 		return 1;
 	}
 	//Enviar mensagem com o id
@@ -165,6 +168,7 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 	CloseHandle(ovWrite.hEvent);
 	CloseHandle(hPipe);
 	free(tdata);
+	ReleaseSemaphore(ctx->hSemPlacares, 1, NULL);
 	return 0;
 }
 
@@ -178,9 +182,16 @@ unsigned __stdcall AcceptThread(void* param) {
 	}
 
 	while (1) {
-		if (WaitForSingleObject(ctx->hShutdown, 0) == WAIT_OBJECT_0) {
+		HANDLE waitHandles[2] = { ctx->hSemPlacares, ctx->hShutdown };
+		DWORD waitRes = WaitForMultipleObjects(2, waitHandles, FALSE, INFINITE);
+		
+		if (waitRes == WAIT_OBJECT_0 + 1) {
+			break; // shutdown
+		} else if (waitRes != WAIT_OBJECT_0) {
+			_tprintf(_T("[CENTRAL] Erro fatal ao aguardar semaforo (erro %lu)\n"), GetLastError());
 			break;
 		}
+
 		HANDLE hPipe = CreateNamedPipe(
 			ctx->pipePath,
 			PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
@@ -191,12 +202,9 @@ unsigned __stdcall AcceptThread(void* param) {
 			NULL
 		);
 		if (hPipe == INVALID_HANDLE_VALUE) {
-			DWORD err = GetLastError();
-			if (err != ERROR_PIPE_BUSY) { // para nao spamar a consola de erros quando atinge o limite de placares
-				_tprintf(_T("[CENTRAL] Erro ao criar named pipe (erro %lu)\n"), err);
-			}
-			Sleep(100);
-			continue;
+			_tprintf(_T("[CENTRAL] Erro critico ao criar named pipe (erro %lu)\n"), GetLastError());
+			ReleaseSemaphore(ctx->hSemPlacares, 1, NULL);
+			break;
 		}
 
 
@@ -216,6 +224,7 @@ unsigned __stdcall AcceptThread(void* param) {
 				if (waitResult == WAIT_OBJECT_0 + 1) {
 					CancelIo(hPipe);
 					CloseHandle(hPipe);
+					ReleaseSemaphore(ctx->hSemPlacares, 1, NULL);
 					break;
 				}
 			}
@@ -223,12 +232,14 @@ unsigned __stdcall AcceptThread(void* param) {
 		else if (!isConnected && GetLastError() != ERROR_PIPE_CONNECTED) {
 			_tprintf(_T("[CENTRAL] Erro ao conectar named pipe (erro %lu)\n"), GetLastError());
 			CloseHandle(hPipe);
+			ReleaseSemaphore(ctx->hSemPlacares, 1, NULL);
 			continue;
 		}
 
 		//verificar shutdown mais uma vez antes de lançar thread
 		if (WaitForSingleObject(ctx->hShutdown, 0) == WAIT_OBJECT_0) {
 			CloseHandle(hPipe);
+			ReleaseSemaphore(ctx->hSemPlacares, 1, NULL);
 			break;
 		}
 
@@ -239,6 +250,7 @@ unsigned __stdcall AcceptThread(void* param) {
 		if (pThreadData == NULL) {
 			_tprintf(_T("[CENTRAL] Erro ao alocar memoria para parametro de thread.\n"));
 			CloseHandle(hPipe);
+			ReleaseSemaphore(ctx->hSemPlacares, 1, NULL);
 			continue;
 		};
 		pThreadData->ctx = ctx;
@@ -253,6 +265,7 @@ unsigned __stdcall AcceptThread(void* param) {
 			_tprintf(_T("[CENTRAL] Erro ao criar thread do placar (erro %lu)\n"), GetLastError());
 			free(pThreadData);
 			CloseHandle(hPipe);
+			ReleaseSemaphore(ctx->hSemPlacares, 1, NULL);
 			continue;
 		}
 		CloseHandle(hThread);

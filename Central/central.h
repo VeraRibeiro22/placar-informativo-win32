@@ -39,6 +39,7 @@ typedef struct {
 	DWORD           proximoId;  // pr�ximo id a atribuir (come�a em 1)
 	CRITICAL_SECTION csPlacares;           // protege o array de placares
 	HANDLE           hShutdown;            // Evento que sinaliza todas as threads para terminar
+	HANDLE           hSemPlacares;         // Semaforo para controlar vagas
 }CENTRAL_CONTEXT;
 
 typedef struct {

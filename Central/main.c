@@ -31,7 +31,7 @@ int _tmain(int argc, TCHAR* argv[]) {
 	CENTRAL_CONTEXT ctx;
 	ZeroMemory(&ctx, sizeof(CENTRAL_CONTEXT));
 
-	// Forçar a inicialização explicita
+	// Forcar a inicializacao explicita
 	for (int i = 0; i < MAX_PLACARES; i++) {
 		ctx.placares[i].ativo = FALSE;
 		ctx.placares[i].hPipe = NULL;
@@ -50,18 +50,27 @@ int _tmain(int argc, TCHAR* argv[]) {
 	ctx.hShutdown = CreateEvent(
 		NULL,
 		TRUE,      // manual reset: acorda todas as threads de uma vez
-		FALSE,      // não sinalizado
+		FALSE,      // nao sinalizado
+		NULL
+	);
+	
+	ctx.hSemPlacares = CreateSemaphore(
+		NULL,
+		MAX_PLACARES,
+		MAX_PLACARES,
 		NULL
 	);
 
-	if (ctx.hShutdown == NULL) {
-		_tprintf(_T("Erro ao criar evento de shutdown (erro %lu)\n"), GetLastError());
+	if (ctx.hShutdown == NULL || ctx.hSemPlacares == NULL) {
+		_tprintf(_T("Erro ao criar eventos de sincronizacao (erro %lu)\n"), GetLastError());
+		if (ctx.hShutdown) CloseHandle(ctx.hShutdown);
+		if (ctx.hSemPlacares) CloseHandle(ctx.hSemPlacares);
 		DeleteCriticalSection(&ctx.csPlacares);
 		CloseHandle(hMutexCentral);
 		return 1;
 	}
 	
-	//lançar thread para aceitar placares
+	// lancar thread para aceitar placares
 	HANDLE hThreadAccept = (HANDLE)_beginthreadex(
 		NULL, 0, AcceptThread, &ctx, 0, NULL
 	);
@@ -69,6 +78,7 @@ int _tmain(int argc, TCHAR* argv[]) {
 		_tprintf(_T("Erro ao criar thread de aceitacao de placares (erro %lu)\n"), GetLastError());
 		SetEvent(ctx.hShutdown);
 		CloseHandle(ctx.hShutdown);
+		if (ctx.hSemPlacares) CloseHandle(ctx.hSemPlacares);
 		DeleteCriticalSection(&ctx.csPlacares);
 		CloseHandle(hMutexCentral);
 		return 1;
@@ -82,6 +92,7 @@ int _tmain(int argc, TCHAR* argv[]) {
 		SetEvent(ctx.hShutdown);
 		CloseHandle(hThreadAccept);
 		CloseHandle(ctx.hShutdown);
+		if (ctx.hSemPlacares) CloseHandle(ctx.hSemPlacares);
 		DeleteCriticalSection(&ctx.csPlacares);
 		CloseHandle(hMutexCentral);
 		return 1;
@@ -111,6 +122,7 @@ int _tmain(int argc, TCHAR* argv[]) {
 	LeaveCriticalSection(&ctx.csPlacares);
 	
 	CloseHandle(ctx.hShutdown);
+	if (ctx.hSemPlacares) CloseHandle(ctx.hSemPlacares);
 	DeleteCriticalSection(&ctx.csPlacares);
 	ReleaseMutex(hMutexCentral);
 	CloseHandle(hMutexCentral);

@@ -23,8 +23,9 @@ unsigned __stdcall UserThread(void* param) {
             _stprintf_s(pipePath, MAX_PIPE_NAME, _T("\\\\.\\pipe\\%s"), ctx->pipeName);
 
             HANDLE hPipe = INVALID_HANDLE_VALUE;
-            int tentativa;
-            for (tentativa = 0; tentativa < 5; tentativa++) {
+            BOOL avisou = FALSE;
+
+            while (1) {
                 hPipe = CreateFile(
                     pipePath,             
                     GENERIC_READ | GENERIC_WRITE, 
@@ -40,12 +41,17 @@ unsigned __stdcall UserThread(void* param) {
                     _tprintf(_T("Erro: nao foi possivel ligar ao central (erro %lu)\n"), GetLastError());
                     break;
                 }
-                WaitNamedPipe(pipePath, 1000); // esperar ate 1s antes de tentar de novo
+                
+                if (!avisou) {
+                    _tprintf(_T("Servidor cheio. A aguardar...\n"));
+                    avisou = TRUE;
+                }
+                
+                WaitNamedPipe(pipePath, NMPWAIT_WAIT_FOREVER); // esperar por vaga
             }
 
             if (hPipe == INVALID_HANDLE_VALUE) {
-                _tprintf(_T("Erro: falha definitiva ao ligar ao central.\n"));
-                break;
+                continue;
             }
 
             // Configurar o modo de leitura do pipe como MESSAGE 
