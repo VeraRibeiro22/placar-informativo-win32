@@ -23,7 +23,6 @@ unsigned __stdcall UserThread(void* param) {
             _stprintf_s(pipePath, MAX_PIPE_NAME, _T("\\\\.\\pipe\\%s"), ctx->pipeName);
 
             HANDLE hPipe = INVALID_HANDLE_VALUE;
-            BOOL avisou = FALSE;
 
             while (1) {
                 hPipe = CreateFile(
@@ -42,12 +41,12 @@ unsigned __stdcall UserThread(void* param) {
                     break;
                 }
                 
-                if (!avisou) {
-                    _tprintf(_T("Servidor cheio. A aguardar...\n"));
-                    avisou = TRUE;
-                }
+                _tprintf(_T("Servidor cheio. A aguardar...\n"));
                 
-                WaitNamedPipe(pipePath, NMPWAIT_WAIT_FOREVER); // esperar por vaga
+                if (!WaitNamedPipe(pipePath, 10000)) { // esperar por vaga durante 10 segundos
+                    _tprintf(_T("Nenhuma vaga abriu em 10s.\n"));
+                    break;
+                }
             }
 
             if (hPipe == INVALID_HANDLE_VALUE) {
