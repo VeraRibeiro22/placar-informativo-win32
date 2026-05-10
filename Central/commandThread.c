@@ -53,10 +53,9 @@ unsigned __stdcall CommandThread(void* param) {
             for (int i = 0; i < MAX_PLACARES; i++) {
                 if (ctx->placares[i].ativo) {
                     count++;
-                    _tprintf(_T("[%d] ID: %lu | Pipe: %p | Alerta: %s"), 
+                    _tprintf(_T("[%d] ID: %lu | Alerta: %s"), 
                         count, 
                         ctx->placares[i].identificador, 
-                        ctx->placares[i].hPipe,
                         ctx->placares[i].temAlerta ? _T("SIM") : _T("NAO"));
                     
                     if (ctx->placares[i].temAlerta) {
@@ -95,75 +94,86 @@ unsigned __stdcall CommandThread(void* param) {
             break;
         }
         // COMANDO ALERTA
-        else if (_tcsncmp(command, _T("alerta"), 6) == 0) {
+        else if (_tcsncmp(command, _T("alerta "), 7) == 0) {
             TCHAR msg[140];
             DWORD duracao = 0;
             DWORD id = 0;
             
-            // Extrair a mensagem assumindo que esta entre aspas: alerta "msg" duracao id
-            TCHAR* msgStart = _tcschr(command, _T('"'));
-            TCHAR* msgEnd = NULL;
-            if (msgStart != NULL) {
-                msgEnd = _tcschr(msgStart + 1, _T('"'));
-            }
+            // Syntax: alerta <msg> <duracao> <id>
+            BOOL formatoValido = FALSE;
             
-            if (msgStart != NULL && msgEnd != NULL) {
-                // Copiar a mensagem sem as aspas
-                int len = (int)(msgEnd - msgStart - 1);
-                if (len >= 140) len = 139;
-                _tcsncpy_s(msg, 140, msgStart + 1, len);
-                msg[len] = _T('\0');
-                
-                // O resto da string contem os numeros (duracao e id)
-                if (_stscanf_s(msgEnd + 1, _T("%lu %lu"), &duracao, &id) == 2) {
-                    MSG_ALERTA msgAlerta;
-                    msgAlerta.tipo = 4;
-                    _tcscpy_s(msgAlerta.msg, 140, msg);
-                    msgAlerta.duracao = duracao;
-                    DWORD num = 0;
-                    EnterCriticalSection(&ctx->csPlacares);
-                    if (id == 0) {
-                        // Enviar para todos os placares ativos
-                        for (int i = 0; i < MAX_PLACARES; i++) {
-                            if (ctx->placares[i].ativo && ctx->placares[i].hPipe != NULL) {
-                                EnviarMensagemPlacar(ctx->placares[i].hPipe, &msgAlerta, sizeof(MSG_ALERTA));
-                                num++;
-                                // atualizar estado local 
-                                ctx->placares[i].temAlerta = TRUE;
-                                _tcscpy_s(ctx->placares[i].alertaMsg, 140, msg);
-                                ctx->placares[i].alertaDuracao = duracao;
+            // Encontrar os ultimos dois espacos para extrair id e duracao
+            TCHAR* lastSpace = _tcsrchr(command, _T(' '));
+            if (lastSpace != NULL) {
+                if (_stscanf_s(lastSpace + 1, _T("%lu"), &id) == 1) {
+                    *lastSpace = _T('\0');
+                    
+                    TCHAR* secondLastSpace = _tcsrchr(command, _T(' '));
+                    if (secondLastSpace != NULL) {
+                        if (_stscanf_s(secondLastSpace + 1, _T("%lu"), &duracao) == 1) {
+                            TCHAR* pMsg = command + 7;
+                            
+                            if (secondLastSpace >= pMsg) {
+                                *secondLastSpace = _T('\0');
+                                
+                                while (*pMsg == _T(' ')) pMsg++;
+                                
+                                if (_tcslen(pMsg) > 0) {
+                                    _tcsncpy_s(msg, 140, pMsg, _TRUNCATE);
+                                    formatoValido = TRUE;
+                                }
                             }
-                        }
-                        if (num == 0) {
-                            _tprintf(_T("[CENTRAL] Nao existem placares ativos.\n"));
-                        }
-                        else {
-                            _tprintf(_T("[CENTRAL] Alerta enviado para todos os placares ativos (&lu).\n"),num);
-                        }
-                    } else {
-                        BOOL found = FALSE;
-                        for (int i = 0; i < MAX_PLACARES; i++) {
-                            if (ctx->placares[i].ativo && ctx->placares[i].identificador == id && ctx->placares[i].hPipe != NULL) {
-                                found = TRUE;
-                                EnviarMensagemPlacar(ctx->placares[i].hPipe, &msgAlerta, sizeof(MSG_ALERTA));
-                                // atualizar estado local
-                                ctx->placares[i].temAlerta = TRUE;
-                                _tcscpy_s(ctx->placares[i].alertaMsg, 140, msg);
-                                ctx->placares[i].alertaDuracao = duracao;
-                                _tprintf(_T("[CENTRAL] Alerta enviado ao placar ID %lu.\n"), id);
-                                break;
-                            }
-                        }
-                        if (!found) {
-                            _tprintf(_T("[CENTRAL] Placar com ID %lu nao encontrado ou inativo.\n"), id);
                         }
                     }
-                    LeaveCriticalSection(&ctx->csPlacares);
-                } else {
-                    _tprintf(_T("[CENTRAL] Formato invalido. Uso: alerta \"<msg>\" <duracao> <id>\n"));
                 }
+            }
+            
+            if (formatoValido) {
+                MSG_ALERTA msgAlerta;
+                msgAlerta.tipo = 4;
+                _tcscpy_s(msgAlerta.msg, 140, msg);
+                msgAlerta.duracao = duracao;
+                DWORD num = 0;
+                EnterCriticalSection(&ctx->csPlacares);
+                if (id == 0) {
+                    // Enviar para todos os placares ativos
+                    for (int i = 0; i < MAX_PLACARES; i++) {
+                        if (ctx->placares[i].ativo && ctx->placares[i].hPipe != NULL) {
+                            EnviarMensagemPlacar(ctx->placares[i].hPipe, &msgAlerta, sizeof(MSG_ALERTA));
+                            num++;
+                            // atualizar estado local 
+                            ctx->placares[i].temAlerta = TRUE;
+                            _tcscpy_s(ctx->placares[i].alertaMsg, 140, msg);
+                            ctx->placares[i].alertaDuracao = duracao;
+                        }
+                    }
+                    if (num == 0) {
+                        _tprintf(_T("[CENTRAL] Nao existem placares ativos.\n"));
+                    }
+                    else {
+                        _tprintf(_T("[CENTRAL] Alerta enviado para todos os placares ativos (%lu).\n"),num);
+                    }
+                } else {
+                    BOOL found = FALSE;
+                    for (int i = 0; i < MAX_PLACARES; i++) {
+                        if (ctx->placares[i].ativo && ctx->placares[i].identificador == id && ctx->placares[i].hPipe != NULL) {
+                            found = TRUE;
+                            EnviarMensagemPlacar(ctx->placares[i].hPipe, &msgAlerta, sizeof(MSG_ALERTA));
+                            // atualizar estado local
+                            ctx->placares[i].temAlerta = TRUE;
+                            _tcscpy_s(ctx->placares[i].alertaMsg, 140, msg);
+                            ctx->placares[i].alertaDuracao = duracao;
+                            _tprintf(_T("[CENTRAL] Alerta enviado ao placar ID %lu.\n"), id);
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        _tprintf(_T("[CENTRAL] Placar com ID %lu nao encontrado ou inativo.\n"), id);
+                    }
+                }
+                LeaveCriticalSection(&ctx->csPlacares);
             } else {
-                _tprintf(_T("[CENTRAL] A mensagem deve estar entre aspas! Uso: alerta \"<msg>\" <duracao> <id>\n"));
+                _tprintf(_T("[CENTRAL] Formato invalido ou mensagem vazia. Uso: alerta <msg> <duracao> <id>\n"));
             }
         }
         // COMANDO CANCELAR
@@ -201,7 +211,7 @@ unsigned __stdcall CommandThread(void* param) {
         // OUTROS COMANDOS
         else {
             _tprintf(_T("[CENTRAL] Comando desconhecido: '%s'\n"), command);
-            _tprintf(_T("[CENTRAL] Comandos disponiveis: alerta \"<msg>\" <dur> <id>, cancelar <id>, listar, encerrar\n"));
+            _tprintf(_T("[CENTRAL] Comandos disponiveis: alerta <msg> <dur> <id>, cancelar <id>, listar, encerrar\n"));
         }
     }
 
