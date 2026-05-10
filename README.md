@@ -1,64 +1,91 @@
-# SO2 – Trabalho Laboratorial – M1
+# Placar Informativo (Sistema de Gestão de Alertas)
+**Sistemas Operativos 2 2025/2026 - DEIS/ISEC**
 
-**Grupo:** Pedro Teixeira Amorim (2022157609) Vera Lúcia Martins Ribeiro (2024140140)
-**Turma:** P2
-**Data de entrega:** 12 de abril de 2026
+## Turma: P2 - Grupo 
+- Pedro Teixeira Amorim (2022157609)
+- Vera Lúcia Martins Ribeiro (2024140140)
+
+## Descrição
+
+Um sistema baseado em comunicação interprocessual (IPC) em Windows para gestão e exibição de alertas de trânsito/informação. O sistema é composto por uma central de controlo e múltiplos placares, comunicando nativamente através das APIs Win32.
+
+## Componentes
+- **Central**: Interface de gestão, atribuição de IDs e difusão de alertas.
+- **Placar**: Interface de exibição local, ligação à central e temporização automática de alertas.
+
+## Tecnologias
+
+- C (Win32 API)
+- Named Pipes (Comunicação bidirecional assíncrona com OVERLAPPED I/O)
+- Sincronização Win32 (Mutexes, Events, Semaphores, Critical Sections, Waitable Timers)
+- MSVC (Visual Studio)
+
+## Estrutura de Diretórios
+
+- `Central/`: Código fonte do programa de controlo central.
+- `placar/`: Código fonte do programa de exibição.
+- `common/`: Estruturas de dados IPC partilhadas entre programas.
+- `docs/`: Documentação e planeamento do projeto.
+
+## Como Compilar e Executar
+
+### Pré-requisitos
+
+1. Microsoft Visual Studio (C/C++ Build Tools).
+2. Sistema Operativo Windows.
+
+### 1. Compilar o Projeto
+
+Abrir o ficheiro `placar-informativo.sln` no Visual Studio e usar a opção Build/Compilar. Os binários serão gerados nas respetivas pastas `x64/Debug` ou `x64/Release`.
+
+### 2. Executar a Simulação (3 Terminais)
+
+Para testar a arquitetura IPC e a gestão concorrida, abre 3 terminais na pasta onde os binários foram gerados (ex: `x64\Debug`).
+
+**Terminal 1: Central de Controlo**
+*(Inicia o servidor de controlo e cria o Named Pipe com o nome fornecido)*
+```bash
+.\Central.exe tubo1
+```
+
+**Terminal 2: Placar 1**
+*(Inicia a primeira instância do placar. De seguida, introduz o comando `ligar` para efetuar o registo)*
+```bash
+.\placar.exe tubo1
+```
+
+**Terminal 3: Placar 2**
+*(Inicia um segundo placar em simultâneo. Introduz também o comando `ligar`)*
+```bash
+.\placar.exe tubo1
+```
+
+**Exemplo de Comandos a testar na Central (Terminal 1):**
+```bash
+alerta Acidente na A1 Km 34 60 0
+listar
+cancelar 1
+encerrar
+```
 
 ---
 
-## Requisitos Implementados (M1 — `placar` standalone)
+## Estado do Projeto (Meta 2)
 
-- [x] Comando `ligar` — gera identificador aleatório e apresenta `Identificador = X`
-- [x] Comando `desligar` — termina o programa de forma controlada, libertando todos os handles
-- [x] Nome do named pipe via linha de comandos (`placar.exe tubo`) ou lido do Registry
-- [x] Guarda o nome do pipe em `HKCU\Software\TrabSO2` → `NPIPE` (`REG_SZ`) quando passado na CLI
-- [x] Erro e não inicia se o nome do pipe não for encontrado em lado nenhum
-- [x] Output `NamedPipe = 'tubo'` ao iniciar
-- [x] Duas threads obrigatórias: `UserThread` (comandos) e `AlertThread` (alertas + timer)
-- [x] Thread de alertas espera em evento manual-reset com nome `"notificar"`
-- [x] Lê alerta do Registry como `REG_BINARY` (struct `MSG_ALERTA`) — par nome = nome do pipe
-- [x] Apresenta alerta com formato `DD/MM/AAAA (HH:MM:SS): 'mensagem'`
-- [x] Usa waitable timer para gerir a duração do alerta
-- [x] Apresenta `'---'` com timestamp quando o alerta expira
-- [x] Novo alerta substitui o alerta ativo (cancela timer anterior, reinicia com nova duração)
+### Programa CENTRAL *(Concluído)*
+- [x]  Ler nome do named pipe por linha de comandos.
+- [x]  Implementar gestão de Named Pipes (Modo Mensagem, bidirecional, i/o assíncrono).
+- [x]  Implementar limite de instância única (Mutex nomeado)
+- [x]  Implementar comando `alerta <msg> <duracao> <id>`: Envia um alerta para o placar com o ID especificado.
+- [x]  Implementar comando `cancelar <id>`: Cancela o alerta do placar com o ID especificado.
+- [x]  Implementar comando `listar`: Mostra os placares ativos, respetivos IDs e alertas em curso.
+- [x]  Implementar comando `encerrar`: Termina todos os placares ligados e encerra a central.
+- [x]  Processar mensagens vindas dos PLACARES.
 
----
-
-## Decisões Tomadas
-
-| Decisão | Escolha |
-|---|---|
-| Organização das threads | `main()` como supervisor + `UserThread` + `AlertThread` |
-| Shutdown inter-thread | Evento anónimo auto-reset (`hShutdown`) via `WaitForMultipleObjects` |
-| Intervalo do ID aleatório | 1–100 (`rand() % 100 + 1`) |
-| Nome do valor Registry para o alerta | Igual ao nome do pipe (segue literalmente o enunciado) |
-
----
-
-### Como Executar
-
-**1. Lançar o placar com nome do pipe:**
-```
-placar.exe tubo
-```
-
-**2. Na consola do placar, dar o comando:**
-```
-ligar
-```
-→ Output: `Identificador = 7` (valor aleatório)
-
-**3. Simular chegada de alerta** (script `injector.c`):
-- Escreve uma struct `MSG_ALERTA` no Registry em `HKCU\Software\TrabSO2`, valor `tubo`, tipo `REG_BINARY`
-- Sinaliza o evento nomeado `"notificar"` com `SetEvent` 
-
-```
-tools\injetor.exe tubo "A7 Norte - Acidente Km 34 - Lento" 15
-```
-
-**4. Terminar:**
-```
-desligar
-```
-
----
+### Programa PLACAR *(Concluído)*
+- [x]  Remover lógica de simulação da Meta 1 (Registry e Eventos nomeados).
+- [x]  Implementar a ligação ao Central através de Named Pipes.
+- [x]  Comando `ligar`: Envia pedido de registo ao Central.
+- [x]  Comando `desligar`: Envia pedido de encerramento ao Central.
+- [x]  Notificar fim de alerta: Envia aviso ao Central quando o timer de duração expirar.
+- [x]  Processar mensagens vindas do CENTRAL.
