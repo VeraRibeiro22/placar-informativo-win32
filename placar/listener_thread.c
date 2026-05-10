@@ -58,8 +58,10 @@ unsigned __stdcall ListenerThread(void* param) {
         BYTE tipo = buffer[0];
 
         switch (tipo) {
-            case 2: // MSG_CMD tipo 2: eco do desligar (pode chegar antes do pipe fechar)
-            {      // Ignorar — o placar ja encerrou de forma fire-and-forget
+            case 2: // MSG_CMD tipo 2: confirmacao do desligar
+            {      
+                _tprintf(_T("\n[Placar] Confirmacao de desligar recebida da Central. A encerrar...\n"));
+                SetEvent(ctx->hShutdown);
                 break;
             }
             case 4: // MSG_ALERTA (Novo alerta recebido)

@@ -23,11 +23,11 @@
 // ==========================================================================
 typedef struct {
 	BOOL   ativo;               // TRUE se estiver ativo
-	DWORD  identificador;       // ID único atribuído
+	DWORD  identificador;       // ID ï¿½nico atribuï¿½do
 	HANDLE hPipe;               // Handle do named pipe para este placar
 	BOOL   temAlerta;           // TRUE se tem alerta ativo
 	TCHAR  alertaMsg[140];      // Mensagem do alerta ativo
-	DWORD  alertaDuracao;       // Duração do alerta ativo (segundos)
+	DWORD  alertaDuracao;       // Duraï¿½ï¿½o do alerta ativo (segundos)
 } PLACAR_INFO;
 
 
@@ -36,26 +36,26 @@ typedef struct {
 	TCHAR pipePath[256];
 	PLACAR_INFO     placares[MAX_PLACARES];
 	DWORD           numPlacares;            
-	DWORD           proximoId;  // próximo id a atribuir (começa em 1)
+	DWORD           proximoId;  // prï¿½ximo id a atribuir (comeï¿½a em 1)
 	CRITICAL_SECTION csPlacares;           // protege o array de placares
 	HANDLE           hShutdown;            // Evento que sinaliza todas as threads para terminar
 }CENTRAL_CONTEXT;
 
 typedef struct {
 	CENTRAL_CONTEXT* ctx;
-	HANDLE           hPipe;     // Pipe já conectado a este placar
-	int              posicao;      // Índice no array placares (-1 enquanto não registado)
+	HANDLE           hPipe;     // Pipe jï¿½ conectado a este placar
+	int              posicao;      // ï¿½ndice no array placares (-1 enquanto nï¿½o registado)
 } PLACAR_THREAD_DATA;
 
 // ==========================================================================
-// Protótipos
+// Protï¿½tipos
 // ==========================================================================
 
 // Thread para aceitar placares
 unsigned __stdcall AcceptThread(void* param);
 unsigned __stdcall CommandThread(void* param);
 
-// Protótipos das threads da Central
+// Protï¿½tipos das threads da Central
 unsigned __stdcall AcceptThread(void* param);
 unsigned __stdcall CommandThread(void* param);
 //unsigned __stdcall PlacarHandlerThread(void* param);

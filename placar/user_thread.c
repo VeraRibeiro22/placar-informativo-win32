@@ -103,18 +103,18 @@ unsigned __stdcall UserThread(void* param) {
             if (hListener) CloseHandle(hListener);
         }
         // COMANDO: desligar
-        // Envia MSG_CMD (tipo 2) ao central como aviso (fire-and-forget).
-        // Não aguarda confirmação — o placar encerra imediatamente após notificar.
+        // Envia MSG_CMD (tipo 2) ao central e aguarda confirmacao.
         else if (_tcscmp(command, _T("desligar")) == 0) {
             if (ctx->isConnected && ctx->hPipe != NULL) {
                 MSG_CMD msgDesligar;
                 msgDesligar.tipo = 2;
                 EnviarMensagemCentral(ctx->hPipe, &msgDesligar, sizeof(MSG_CMD));
-                ctx->isConnected = FALSE;
+                _tprintf(_T("A aguardar confirmacao do central...\n"));
+                
+                WaitForSingleObject(ctx->hShutdown, INFINITE);
+            } else {
+                SetEvent(ctx->hShutdown);
             }
-            // Sinalizar shutdown para acordar AlertThread (hShutdown é auto-reset).
-            // A ListenerThread terminará sozinha quando o pipe fechar do lado da Central.
-            SetEvent(ctx->hShutdown);
             break;
         }
         else {

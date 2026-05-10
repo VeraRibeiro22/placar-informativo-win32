@@ -1,4 +1,4 @@
-﻿#include "central.h"
+#include "central.h"
 unsigned __stdcall PlacarHandlerThread(void* param) {
 	PLACAR_THREAD_DATA* tdata = (PLACAR_THREAD_DATA*)param;
 	CENTRAL_CONTEXT* ctx = tdata->ctx;
@@ -178,11 +178,9 @@ unsigned __stdcall AcceptThread(void* param) {
 	}
 
 	while (1) {
-		//verificar shutdown
 		if (WaitForSingleObject(ctx->hShutdown, 0) == WAIT_OBJECT_0) {
 			break;
 		}
-		//criar inst�ncia do named pipe
 		HANDLE hPipe = CreateNamedPipe(
 			ctx->pipePath,
 			PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
@@ -193,13 +191,17 @@ unsigned __stdcall AcceptThread(void* param) {
 			NULL
 		);
 		if (hPipe == INVALID_HANDLE_VALUE) {
-			_tprintf(_T("[CENTRAL] Erro ao criar named pipe (erro %lu)\n"), GetLastError());
-			break;
+			DWORD err = GetLastError();
+			if (err != ERROR_PIPE_BUSY) { // para nao spamar a consola de erros quando atinge o limite de placares
+				_tprintf(_T("[CENTRAL] Erro ao criar named pipe (erro %lu)\n"), err);
+			}
+			Sleep(100);
+			continue;
 		}
 
 
 
-		// ConnectNamedPipe ass�ncrono para n�o bloquear indefinidamente
+		// ConnectNamedPipe assincrono para nao bloquear indefinidamente
 		ResetEvent(hConnectPipeEvent);
 		OVERLAPPED ovConnect;
 		ZeroMemory(&ovConnect, sizeof(OVERLAPPED));
@@ -224,7 +226,7 @@ unsigned __stdcall AcceptThread(void* param) {
 			continue;
 		}
 
-		//verificar shutdown mais uma vez antes de lan�ar thread
+		//verificar shutdown mais uma vez antes de lançar thread
 		if (WaitForSingleObject(ctx->hShutdown, 0) == WAIT_OBJECT_0) {
 			CloseHandle(hPipe);
 			break;
@@ -232,20 +234,18 @@ unsigned __stdcall AcceptThread(void* param) {
 
 
 
-		//alocar mem�ria para par�metro da thread PlacarHandlerThread
 		PLACAR_THREAD_DATA* pThreadData = (PLACAR_THREAD_DATA*)malloc(sizeof(PLACAR_THREAD_DATA));
 
 		if (pThreadData == NULL) {
-			_tprintf(_T("[CENTRAL] Erro ao alocar mem�ria para par�metro de thread.\n"));
+			_tprintf(_T("[CENTRAL] Erro ao alocar memoria para parametro de thread.\n"));
 			CloseHandle(hPipe);
 			continue;
 		};
-		// passar par�metros para a thread dedicada a um placar (thread dedicada a cada placar)
 		pThreadData->ctx = ctx;
 		pThreadData->hPipe = hPipe;
 		pThreadData->posicao = -1;
 
-		//lan�ar thread dedicada a um placar
+		//lancar thread dedicada a um placar
 		HANDLE hThread = (HANDLE)_beginthreadex(
 			NULL, 0, PlacarHandlerThread, pThreadData, 0, NULL
 		);
@@ -255,7 +255,6 @@ unsigned __stdcall AcceptThread(void* param) {
 			CloseHandle(hPipe);
 			continue;
 		}
-		//fechar o handle da tread uma vez que n�o � necess�rio
 		CloseHandle(hThread);
 	}
 	CloseHandle(hConnectPipeEvent);

@@ -105,8 +105,9 @@ int _tmain(int argc, TCHAR* argv[]) {
 
     _tprintf(_T("Placar iniciado. A aguardar comandos...\n"));
 
-    // Esperar que a thread do utilizador termine
-    WaitForSingleObject(hThreadUser, INFINITE);
+    // Esperar pelo evento de desligar (hShutdown)
+    HANDLE handlesWait[2] = { hThreadUser, ctx.hShutdown };
+    WaitForMultipleObjects(2, handlesWait, FALSE, INFINITE);
 
     // Esperar que a thread de alertas termine
     WaitForSingleObject(hThreadAlert, 5000);
