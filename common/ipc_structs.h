@@ -49,8 +49,9 @@ typedef struct {
  * central ↔ monitor  (via Memória Partilhada / Ficheiros Mapeados em Memória)
  * ========================================================================== */
 typedef struct {
-    DWORD identificador;    // ID do placar a que pertence o alerta
-    DWORD duracao;          // Duração em segundos
-    TCHAR msg[140];         // Mensagem do alerta
-    BOOL desligar;          // TRUE quando o central está a encerrar
+    struct {
+        DWORD identificador, duracao;
+        TCHAR msg[140];
+    } placar[20];
+    BOOL desligar;  // TRUE quando o central está a encerrar
 } SHM_ALERTA;

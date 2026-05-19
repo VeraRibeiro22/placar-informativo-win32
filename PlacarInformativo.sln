@@ -6,6 +6,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "placar", "placar\placar.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Central", "Central\Central.vcxproj", "{7B9EAE8C-3A72-4EB1-BE83-99BCD4B8728A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Monitor", "Monitor\Monitor.vcxproj", "{5947EF78-EA14-4C94-AEC1-BC0650384B7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -30,8 +32,19 @@ Global
 		{7B9EAE8C-3A72-4EB1-BE83-99BCD4B8728A}.Release|x64.Build.0 = Release|x64
 		{7B9EAE8C-3A72-4EB1-BE83-99BCD4B8728A}.Release|x86.ActiveCfg = Release|Win32
 		{7B9EAE8C-3A72-4EB1-BE83-99BCD4B8728A}.Release|x86.Build.0 = Release|Win32
+		{5947EF78-EA14-4C94-AEC1-BC0650384B7C}.Debug|x64.ActiveCfg = Debug|x64
+		{5947EF78-EA14-4C94-AEC1-BC0650384B7C}.Debug|x64.Build.0 = Debug|x64
+		{5947EF78-EA14-4C94-AEC1-BC0650384B7C}.Debug|x86.ActiveCfg = Debug|Win32
+		{5947EF78-EA14-4C94-AEC1-BC0650384B7C}.Debug|x86.Build.0 = Debug|Win32
+		{5947EF78-EA14-4C94-AEC1-BC0650384B7C}.Release|x64.ActiveCfg = Release|x64
+		{5947EF78-EA14-4C94-AEC1-BC0650384B7C}.Release|x64.Build.0 = Release|x64
+		{5947EF78-EA14-4C94-AEC1-BC0650384B7C}.Release|x86.ActiveCfg = Release|Win32
+		{5947EF78-EA14-4C94-AEC1-BC0650384B7C}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {48B25D5F-2301-40A2-9F54-93EA798ACB79}
 	EndGlobalSection
 EndGlobal
