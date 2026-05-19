@@ -10,7 +10,13 @@ int WINAPI _tWinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPTSTR lpCmdLine, int
 	_tcscpy_s(ctx.nomeMutex, 256, _T("Placar_Mutex_SHM"));
 	_tcscpy_s(ctx.nomeEvento, 256, _T("Placar_Event_Update"));
 
+	// evento de shutdown para a ShmThread (anonimo e manual-reset)
 	ctx.hShutdown = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (ctx.hShutdown == NULL) {
+		MessageBox(NULL, _T("Erro ao criar evento de shutdown."),
+			_T("Erro Crítico"), MB_OK | MB_ICONERROR);
+		return 1;
+	}
 
 
 	WNDCLASSEX wcApp;
@@ -29,8 +35,11 @@ int WINAPI _tWinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPTSTR lpCmdLine, int
 	wcApp.cbWndExtra = sizeof(MONITOR_CONTEXT*);;
 	wcApp.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wcApp.lpszMenuName = MAKEINTRESOURCE(IDC_MONITOR);
-	if (!RegisterClassEx(&wcApp))
-		return(0);
+	if (!RegisterClassEx(&wcApp)) {
+			MessageBox(NULL, _T("Erro ao registar classe de janela."),_T("Erro Crítico"), MB_OK | MB_ICONERROR);
+			CloseHandle(ctx.hShutdown);
+			return 1;
+	}
 	//Criar janela
 	ctx.hWnd = CreateWindow(
 		SZPROGNAME,
@@ -44,7 +53,9 @@ int WINAPI _tWinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPTSTR lpCmdLine, int
 		(HMENU)NULL,  // handle do menu da janela 
 		(HINSTANCE)hInst,  // handle da instância do programa actual
 		NULL);
-	if (ctx.hWnd == INVALID_HANDLE_VALUE) {
+	if (ctx.hWnd == NULL) {
+		MessageBox(NULL, _T("Erro ao criar janela principal."),_T("Erro Crítico"), MB_OK | MB_ICONERROR);
+		CloseHandle(ctx.hShutdown);
 		return 1;
 	}
 	SetWindowLongPtr(ctx.hWnd, 0, (LONG_PTR)&ctx);
@@ -57,6 +68,19 @@ int WINAPI _tWinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPTSTR lpCmdLine, int
 		TranslateMessage(&lpMsg);  // Pré-processamento da mensagem 
 		DispatchMessage(&lpMsg);  // Enviar a mensagem traduzida de volta ao Windows, que aguarda até que a possa reenviar à função de tratamento da janela
 	}
+	// sinalizar e aguardar a ShmThread 
+	SetEvent(ctx.hShutdown);
+	if (ctx.hShmThread != NULL) {
+		WaitForSingleObject(ctx.hShmThread, INFINITE);
+		CloseHandle(ctx.hShmThread);
+	}
+
+	// Fechar handles se estiverem abertos
+	if (ctx.hShm)   CloseHandle(ctx.hShm);
+	if (ctx.hMutex) CloseHandle(ctx.hMutex);
+	if (ctx.hEvent) CloseHandle(ctx.hEvent);
+
+	CloseHandle(ctx.hShutdown);
 	//encerrar o programa
 	return (int)lpMsg.wParam;
 }

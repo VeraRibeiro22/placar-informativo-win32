@@ -18,6 +18,15 @@
 #define MUTEX_CENTRAL     _T("CentralControlo_Mutex")
 #define PIPE_BUFFER_SIZE    4096
 
+// Nomes dos recursos IPC partilhados com o monitor
+#define SHM_NAME                _T("Placar_Shared_Memory")
+#define SHM_MUTEX_NAME          _T("Placar_Mutex_SHM")
+#define SHM_EVENT_NAME          _T("Placar_Event_Update")
+#define SHM_READY_EVENT_NAME    _T("Placar_Central_Ready")
+
+// Número máximo de entradas na SHM (uma por placar ativo)
+#define SHM_MAX_ALERTAS         MAX_PLACARES
+
 // ==========================================================================
 // Structs
 // ==========================================================================
@@ -40,6 +49,12 @@ typedef struct {
 	CRITICAL_SECTION csPlacares;           // protege o array de placares
 	HANDLE           hShutdown;            // Evento que sinaliza todas as threads para terminar
 	HANDLE           hSemPlacares;         // Semaforo para controlar vagas
+
+	HANDLE           hShm;
+	SHM_ALERTA* pShm;         
+	HANDLE           hShmMutex;     // protege a SHM
+	HANDLE           hShmEvent;     // evento notifica o monitor de alterações
+	HANDLE           hReadyEvent;   // evento sinalizado quando SHM está pronta
 }CENTRAL_CONTEXT;
 
 typedef struct {

@@ -70,6 +70,86 @@ int _tmain(int argc, TCHAR* argv[]) {
 		return 1;
 	}
 	
+	//MEMÓRIA PARTILHADA (SHM)
+	DWORD shmSize = sizeof(SHM_ALERTA) * SHM_MAX_ALERTAS;
+	ctx.hShm = CreateFileMapping(
+		INVALID_HANDLE_VALUE,   
+		NULL,
+		PAGE_READWRITE,
+		0,
+		shmSize,
+		SHM_NAME
+	);
+	if (ctx.hShm == NULL) {
+		_tprintf(_T("Erro ao criar File Mapping (erro %lu)\n"), GetLastError());
+		if (ctx.hShutdown) CloseHandle(ctx.hShutdown);
+		if (ctx.hSemPlacares) CloseHandle(ctx.hSemPlacares);
+		DeleteCriticalSection(&ctx.csPlacares);
+		CloseHandle(hMutexCentral);
+		return 1;
+	}
+	ctx.pShm = (SHM_ALERTA*)MapViewOfFile(
+		ctx.hShm,
+		FILE_MAP_ALL_ACCESS,
+		0, 
+		0,
+		shmSize
+	);
+	if (ctx.pShm == NULL) {
+		_tprintf(_T("Erro ao mapear SHM (erro %lu)\n"), GetLastError());
+		if (ctx.hShutdown) CloseHandle(ctx.hShutdown);
+		if (ctx.hSemPlacares) CloseHandle(ctx.hSemPlacares);
+		DeleteCriticalSection(&ctx.csPlacares);
+		CloseHandle(hMutexCentral);
+		CloseHandle(ctx.hShm);
+		return 1;
+	}
+
+	ZeroMemory(ctx.pShm, shmSize);
+
+	//criar MUTEX que protehge a SHM
+	ctx.hShmMutex = CreateMutex(NULL, FALSE, SHM_MUTEX_NAME);
+	if (ctx.hShmMutex == NULL) {
+		_tprintf(_T("Erro ao criar mutex da SHM (erro %lu)\n"), GetLastError());
+		if (ctx.hShutdown) CloseHandle(ctx.hShutdown);
+		if (ctx.hSemPlacares) CloseHandle(ctx.hSemPlacares);
+		DeleteCriticalSection(&ctx.csPlacares);
+		CloseHandle(hMutexCentral);
+		CloseHandle(ctx.hShm);
+		return 1;
+	}
+	// Evento de update: Central faz SetEvent sempre que altera a SHM
+   // manual-reset: o monitor faz ResetEvent depois de ler
+	ctx.hShmEvent = CreateEvent(NULL, FALSE, FALSE, SHM_EVENT_NAME);
+	if (ctx.hShmEvent == NULL) {
+		_tprintf(_T("Erro ao criar evento de update da SHM (erro %lu)\n"), GetLastError());
+		if (ctx.hShutdown) CloseHandle(ctx.hShutdown);
+		if (ctx.hSemPlacares) CloseHandle(ctx.hSemPlacares);
+		DeleteCriticalSection(&ctx.csPlacares);
+		CloseHandle(hMutexCentral);
+		CloseHandle(ctx.hShm);
+		CloseHandle(ctx.hShmMutex);
+		return 1;
+	}
+
+	// Ready event — sinalizado quando todos os recursos IPC estão prontos.
+	ctx.hReadyEvent = CreateEvent(NULL, TRUE, FALSE, SHM_READY_EVENT_NAME);
+	if (ctx.hReadyEvent == NULL) {
+		_tprintf(_T("Erro ao criar ready event (erro %lu)\n"), GetLastError());
+		if (ctx.hShutdown) CloseHandle(ctx.hShutdown);
+		if (ctx.hSemPlacares) CloseHandle(ctx.hSemPlacares);
+		DeleteCriticalSection(&ctx.csPlacares);
+		CloseHandle(hMutexCentral);
+		CloseHandle(ctx.hShm);
+		CloseHandle(ctx.hShmMutex);
+		CloseHandle(ctx.hShmEvent);
+		return 1;
+	}
+
+	// Tudo criado — sinalizar para os monitores que estejam à espera
+	SetEvent(ctx.hReadyEvent);
+
+
 	// lancar thread para aceitar placares
 	HANDLE hThreadAccept = (HANDLE)_beginthreadex(
 		NULL, 0, AcceptThread, &ctx, 0, NULL
