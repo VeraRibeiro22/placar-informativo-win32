@@ -120,7 +120,7 @@ int _tmain(int argc, TCHAR* argv[]) {
 	}
 	// Evento de update: Central faz SetEvent sempre que altera a SHM
    // manual-reset: o monitor faz ResetEvent depois de ler
-	ctx.hShmEvent = CreateEvent(NULL, FALSE, FALSE, SHM_EVENT_NAME);
+	ctx.hShmEvent = CreateEvent(NULL, TRUE, FALSE, SHM_EVENT_NAME);
 	if (ctx.hShmEvent == NULL) {
 		_tprintf(_T("Erro ao criar evento de update da SHM (erro %lu)\n"), GetLastError());
 		if (ctx.hShutdown) CloseHandle(ctx.hShutdown);
