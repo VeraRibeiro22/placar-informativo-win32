@@ -24,8 +24,6 @@
 #define SHM_EVENT_NAME          _T("Placar_Event_Update")
 #define SHM_READY_EVENT_NAME    _T("Placar_Central_Ready")
 
-// Número máximo de entradas na SHM (uma por placar ativo)
-#define SHM_MAX_ALERTAS         MAX_PLACARES
 
 // ==========================================================================
 // Structs

@@ -24,12 +24,18 @@
     <ClInclude Include="Resource.h">
       <Filter>Arquivos de Cabeçalho</Filter>
     </ClInclude>
-    <ClInclude Include="Monitor.h">
+    <ClInclude Include="monitor.h">
       <Filter>Arquivos de Cabeçalho</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Monitor.c">
+    <ClCompile Include="main.c">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
+    <ClCompile Include="shmReadThread.c">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
+    <ClCompile Include="monitorConnectThread.c">
       <Filter>Arquivos de Origem</Filter>
     </ClCompile>
   </ItemGroup>

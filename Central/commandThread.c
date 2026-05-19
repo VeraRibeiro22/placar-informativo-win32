@@ -89,6 +89,12 @@ unsigned __stdcall CommandThread(void* param) {
             }
             LeaveCriticalSection(&ctx->csPlacares);
 
+            // Avisar todos os monitors que a plataforma vai encerrar
+            WaitForSingleObject(ctx->hShmMutex, INFINITE);
+            ctx->pShm->desligar = TRUE;
+            ReleaseMutex(ctx->hShmMutex);
+            SetEvent(ctx->hShmEvent);  // avisar o monitor antes de fechar tudo
+
             // Sinaliza o evento de shutdown para acordar a AcceptThread e as PlacarHandlerThread
             SetEvent(ctx->hShutdown);
             break;

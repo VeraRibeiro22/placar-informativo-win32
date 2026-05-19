@@ -124,12 +124,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
-    <ClInclude Include="Monitor.h" />
+    <ClInclude Include="monitor.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Monitor.c" />
+    <ClCompile Include="main.c" />
+    <ClCompile Include="monitorConnectThread.c" />
+    <ClCompile Include="shmReadThread.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Monitor.rc" />

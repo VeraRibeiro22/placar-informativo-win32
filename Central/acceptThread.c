@@ -122,6 +122,15 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 				ctx->placares[pos].temAlerta = FALSE;
 				LeaveCriticalSection(&ctx->csPlacares);
 				_tprintf(_T("[CENTRAL] Alerta do placar com ID %lu terminou.\n"), ctx->placares[pos].identificador);
+
+				//limpar a SHM
+				WaitForSingleObject(ctx->hShmMutex, INFINITE);         
+				ctx->pShm->placar[pos].identificador = 0;
+				ctx->pShm->placar[pos].duracao = 0;
+				ctx->pShm->placar[pos].msg[0] = _T('\0');
+				ReleaseMutex(ctx->hShmMutex);                          
+				SetEvent(ctx->hShmEvent); //avisar o monitor
+
 				break;
 			}
 			case 4:
@@ -131,6 +140,14 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 				ctx->placares[pos].temAlerta = TRUE;
 				LeaveCriticalSection(&ctx->csPlacares);
 				_tprintf(_T("[CENTRAL] Placar com ID %lu confirmou rececao de alerta '%s'.\n"), ctx->placares[pos].identificador, msg_alerta_eco->msg);
+
+				//escrever na SHM
+				WaitForSingleObject(ctx->hShmMutex, INFINITE);
+				ctx->pShm->placar[pos].identificador = ctx->placares[pos].identificador;
+				ctx->pShm->placar[pos].duracao = msg_alerta_eco->duracao;
+				_tcscpy_s(ctx->pShm->placar[pos].msg, 140, msg_alerta_eco->msg);
+				ReleaseMutex(ctx->hShmMutex);                          
+				SetEvent(ctx->hShmEvent); //avisar o monitor
 				break;
 			}
 			case 5: // MSG_CMD  tipo 5 = eco do cancelar
@@ -139,6 +156,14 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 				ctx->placares[pos].temAlerta = FALSE;
 				LeaveCriticalSection(&ctx->csPlacares);
 				_tprintf(_T("[CENTRAL] Placar com ID %lu confirmou cancelamento de alerta.\n"), ctx->placares[pos].identificador);
+
+				//limpar a SHM
+				WaitForSingleObject(ctx->hShmMutex, INFINITE);         
+				ctx->pShm->placar[pos].identificador = 0;
+				ctx->pShm->placar[pos].duracao = 0;
+				ctx->pShm->placar[pos].msg[0] = _T('\0');
+				ReleaseMutex(ctx->hShmMutex);
+				SetEvent(ctx->hShmEvent); //avisar o monitor
 				break;
 			}
 			default:

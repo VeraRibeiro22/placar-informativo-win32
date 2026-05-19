@@ -1,0 +1,53 @@
+﻿@@ -7,6 +7,7 @@
+ 	
+ 	ctx.maxAlertas = MAX_ALERTAS_DEFAULT;
+ 	ctx.numAlertaAtivos = 0;
++	ctx.offset = 0;
+ 	_tcscpy_s(ctx.nomeShm, 256, _T("Placar_Shared_Memory"));
+ 	_tcscpy_s(ctx.nomeMutex, 256, _T("Placar_Mutex_SHM"));
+ 	_tcscpy_s(ctx.nomeEvento, 256, _T("Placar_Event_Update"));
+@@ -82,12 +83,12 @@
+ 		}
+ 		else if (pCtx != NULL) {
+ 			TCHAR str[300];
+-			for (int i = 0; i < pCtx->numAlertaAtivos; i++) {
++			for (int i = pCtx->offset, linha = 0; i < pCtx->numAlertaAtivos && linha < pCtx->maxAlertas; i++, linha++) {
+ 				_stprintf_s(str, 300, _T("ID PLACAR: %lu |ALERTA: %s | DURA??O: %lu s"),
+ 					pCtx->alertasLocais[i].identificador,
+ 					pCtx->alertasLocais[i].msg,
+ 					pCtx->alertasLocais[i].duracao);
+-				TextOut(hdc, 10, 10 + i * 20, str, (int)_tcslen(str));
++				TextOut(hdc, 10, 10 + linha * 20, str, (int)_tcslen(str));
+ 			}
+ 		}
+ 
+@@ -107,6 +108,23 @@
+ 				MB_OK | MB_ICONINFORMATION);
+ 		}
+ 		else if (wParam == ID_FICHEIRO_SAIR) {
++			if (pCtx != NULL && pCtx->hShutdown != NULL) {
++				SetEvent(pCtx->hShutdown);
++			}
++			PostQuitMessage(0); // Fecha a janela
++		}
++		break;
++	}
++	case WM_KEYDOWN:
++	{
++		if (wParam == VK_NEXT) { // Page Down
++			if (pCtx != NULL && pCtx->offset + pCtx->maxAlertas < pCtx->numAlertaAtivos) {
++				pCtx->offset += pCtx->maxAlertas;
++				InvalidateRect(hWnd, NULL, TRUE);
++			}
++		}
++		else if (wParam == VK_PRIOR) { // Page Up
++			if (pCtx != NULL && pCtx->offset > 0) {
++				pCtx->offset -= pCtx->maxAlertas;
++				if (pCtx->offset < 0) pCtx->offset = 0;
++				InvalidateRect(hWnd, NULL, TRUE);
++			}
++		}
++		break;
++	}
++	case WM_DESTROY:
++	{

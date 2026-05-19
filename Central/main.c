@@ -71,7 +71,7 @@ int _tmain(int argc, TCHAR* argv[]) {
 	}
 	
 	//MEMÓRIA PARTILHADA (SHM)
-	DWORD shmSize = sizeof(SHM_ALERTA) * SHM_MAX_ALERTAS;
+	DWORD shmSize = sizeof(SHM_ALERTA);
 	ctx.hShm = CreateFileMapping(
 		INVALID_HANDLE_VALUE,   
 		NULL,
@@ -201,6 +201,13 @@ int _tmain(int argc, TCHAR* argv[]) {
 	}
 	LeaveCriticalSection(&ctx.csPlacares);
 	
+	// libertar a Memória Partilhada e Eventos
+	if (ctx.pShm != NULL)      UnmapViewOfFile(ctx.pShm);
+	if (ctx.hShm != NULL)      CloseHandle(ctx.hShm);
+	if (ctx.hShmMutex != NULL) CloseHandle(ctx.hShmMutex);
+	if (ctx.hShmEvent != NULL) CloseHandle(ctx.hShmEvent);   
+	if (ctx.hReadyEvent != NULL) CloseHandle(ctx.hReadyEvent);
+
 	CloseHandle(ctx.hShutdown);
 	if (ctx.hSemPlacares) CloseHandle(ctx.hSemPlacares);
 	DeleteCriticalSection(&ctx.csPlacares);
