@@ -130,6 +130,8 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 				ctx->pShm->placar[pos].msg[0] = _T('\0');
 				ReleaseMutex(ctx->hShmMutex);                          
 				SetEvent(ctx->hShmEvent); //avisar o monitor
+				Sleep(20);                // dar tempo aos monitores
+				ResetEvent(ctx->hShmEvent);
 
 				break;
 			}
@@ -148,6 +150,8 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 				_tcscpy_s(ctx->pShm->placar[pos].msg, 140, msg_alerta_eco->msg);
 				ReleaseMutex(ctx->hShmMutex);                          
 				SetEvent(ctx->hShmEvent); //avisar o monitor
+				Sleep(20);                // dar tempo aos monitores
+				ResetEvent(ctx->hShmEvent);
 				break;
 			}
 			case 5: // MSG_CMD  tipo 5 = eco do cancelar
@@ -164,6 +168,8 @@ unsigned __stdcall PlacarHandlerThread(void* param) {
 				ctx->pShm->placar[pos].msg[0] = _T('\0');
 				ReleaseMutex(ctx->hShmMutex);
 				SetEvent(ctx->hShmEvent); //avisar o monitor
+				Sleep(20);                // dar tempo aos monitores
+				ResetEvent(ctx->hShmEvent);
 				break;
 			}
 			default:

@@ -1,6 +1,6 @@
-## ESPECIFICAÇÃO COMPLETA DO PROJETO
+# ESPECIFICAÇÃO COMPLETA DO PROJETO
 
-### 1. Contexto e Tema
+## 1. Contexto e Tema
 
 O trabalho consiste na implementação de uma plataforma de divulgação de alertas para placares informativos rodoviários (semelhante aos das autoestradas portuguesas).
 
@@ -11,9 +11,9 @@ O trabalho consiste na implementação de uma plataforma de divulgação de aler
 
 ---
 
-### 2. Programas Envolvidos
+## 2. Programas Envolvidos
 
-#### 2.1 Programa `central`
+### 2.1 Programa `central`
 - Agente central da plataforma.
 - Atribui identificadores únicos aos placares.
 - Centraliza o envio de alertas.
@@ -22,14 +22,14 @@ O trabalho consiste na implementação de uma plataforma de divulgação de aler
 - **Apenas uma instância** pode estar a correr.
 - Nada no sistema funciona sem o `central` estar ativo.
 
-#### 2.2 Programa `placar`
+### 2.2 Programa `placar`
 - Lançado pelo utilizador "instalador" quando instala um placar.
 - Regista-se no `central` e recebe um identificador único.
 - Recebe e exibe alertas com temporização.
 - Interface de linha de comandos para o utilizador "instalador".
 - **Uma instância por placar** (podem existir vários em simultâneo, máximo 20).
 
-#### 2.3 Programa `monitor`
+### 2.3 Programa `monitor`
 - Monitoriza todos os alertas ativos em tempo real.
 - **Interface gráfica Win32** obrigatória.
 - Não interage com os placares – apenas com o `central` (via memória partilhada).
@@ -39,15 +39,15 @@ O trabalho consiste na implementação de uma plataforma de divulgação de aler
 
 ---
 
-### 3. Lógica de Negócio
+## 3. Lógica de Negócio
 
-#### Placares
+### Placares
 - Máximo de **20 placares** registados em simultâneo.
 - Os placares podem ligar-se e desligar-se a qualquer momento.
 - O identificador é um **DWORD**, começa em 1, incrementa de 1 em 1, **sem reutilização**.
 - Quando recebe o seu identificador, o placar mostra-o na consola: `Identificador = 7`
 
-#### Alertas
+### Alertas
 - Constituídos por: **mensagem de texto** (140 `TCHAR`) + **duração em segundos** (`DWORD`).
 - **Só pode existir um alerta ativo por placar** em cada momento.
 - Se chegar um novo alerta a um placar com alerta ativo, o anterior é cancelado/substituído.
@@ -62,9 +62,9 @@ O trabalho consiste na implementação de uma plataforma de divulgação de aler
 
 ---
 
-### 4. Comandos do Utilizador
+## 4. Comandos do Utilizador
 
-#### Programa `central` (utilizador "administrador")
+### Programa `central` (utilizador "administrador")
 
 | Comando | Descrição |
 |---|---|
@@ -73,34 +73,34 @@ O trabalho consiste na implementação de uma plataforma de divulgação de aler
 | `listar` | Lista todos os placares registados e os seus identificadores. Se tiver alerta ativo, mostra-o também. |
 | `encerrar` | Encerra a plataforma. Notifica todos os placares e monitores. |
 
-#### Programa `placar` (utilizador "instalador")
+### Programa `placar` (utilizador "instalador")
 
 | Comando | Descrição |
 |---|---|
 | `ligar` | Estabelece ligação com o `central`. Recebe e mostra o identificador atribuído. |
 | `desligar` | Remove o placar da plataforma (informa o `central`) e termina o programa. |
 
-#### Programa `monitor`
+### Programa `monitor`
 - Interface gráfica (Win32). Sem comandos de texto.
-- Menu obrigatório com:
-  - Redefinir número máximo de alertas a apresentar na lista.
-  - Caixa de informações "Sobre" com dados do grupo.
-  - Sair da aplicação.
+- Menu obrigatório **"Ficheiro"** com:
+  - **"Configuração"** — DialogBox para redefinir número máximo de alertas a apresentar na lista e o nome dos recursos de comunicação/sincronização criados pelo `central`.
+  - **"Acerca"** — MessageBox com nome e número dos alunos do grupo.
+  - **"Sair"** — terminar a aplicação, libertando todos os recursos (sem necessidade de informar o `central`).
 
 ---
 
-### 5. Comunicação entre Programas
+## 5. Comunicação entre Programas
 
-#### 5.1 `placar` ↔ `central` — via **Named Pipes**
+### 5.1 `placar` ↔ `central` — via **Named Pipes**
 
-##### Pedidos do `placar` para o `central`:
+#### Pedidos do `placar` para o `central`:
 ```c
 typedef struct {
     BYTE tipo; // 1 – ligar, 2 – desligar, 3 – fim do alerta (duração esgotada)
 } MSG_CMD;
 ```
 
-##### Respostas/atualizações do `central` para o `placar`:
+#### Respostas/atualizações do `central` para o `placar`:
 ```c
 // Atribuição de identificador
 typedef struct {
@@ -123,23 +123,26 @@ typedef struct {
 
 > ⚠️ O nome do named pipe é especificado na linha de comandos do `placar` **ou** lido do Registry (ver secção 6).
 
-#### 5.2 `monitor` ↔ `central` — via **Memória Partilhada (Ficheiros Mapeados em Memória)**
+### 5.2 `monitor` ↔ `central` — via **Memória Partilhada (Ficheiros Mapeados em Memória)**
 
 ```c
 typedef struct {
-    DWORD identificador;
-    DWORD duracao;
-    TCHAR msg[140];
+    struct {
+        DWORD identificador;
+        DWORD duracao;
+        TCHAR msg[140];
+    } placar[20];
     BOOL desligar;
 } SHM_ALERTA;
 ```
 
 - A comunicação é **exclusivamente por memória partilhada**.
-- Devem existir mecanismos (ex: eventos) para o `monitor` perceber quando há alterações (novo alerta, alerta removido, encerramento), **sem usar outros mecanismos de comunicação adicionais** para além dos da memória partilhada e sincronização.
+- Devem existir mecanismos (ex: eventos, mutex) para o `monitor` perceber quando há alterações (novo alerta, alerta removido, encerramento), **sem usar outros mecanismos de comunicação adicionais** para além dos da memória partilhada e sincronização.
+- **Polling não é considerado uma solução eficiente e não deve ser utilizado.**
 
 ---
 
-### 6. Registry
+## 6. Registry
 
 O programa `placar` guarda/lê o nome do named pipe no Windows Registry:
 
@@ -153,7 +156,7 @@ O programa `placar` guarda/lê o nome do named pipe no Windows Registry:
 
 ---
 
-### 7. Threads Obrigatórias no `placar`
+## 7. Threads Obrigatórias no `placar`
 
 O `placar` deve usar **pelo menos duas threads**:
 1. **Thread de interação com o utilizador** — lê e processa comandos (`ligar`, `desligar`).
@@ -163,7 +166,7 @@ As duas threads devem poder funcionar **em simultâneo**, sem bloquear uma à ou
 
 ---
 
-### 8. Aspetos em Aberto (a decidir pelos alunos)
+## 8. Aspetos em Aberto (a decidir pelos alunos)
 
 Os seguintes aspetos não estão especificados e devem ser decididos de forma simples e lógica:
 - Pormenores gráficos do monitor.
@@ -175,10 +178,11 @@ Os seguintes aspetos não estão especificados e devem ser decididos de forma si
 
 ---
 
-### 9. Regras Importantes
+## 9. Regras Importantes
 
 - ❌ Não colocar ponteiros em memória partilhada.
 - ❌ Não usar objetos STL (como `std::string`, `std::vector`) em estruturas de memória partilhada.
+- ❌ Não usar polling para detetar alterações na memória partilhada.
 - ✅ Usar Unicode (`TCHAR`, `_T()`, funções `W` da API).
 - ✅ Repositórios git devem ser **privados**.
 - ✅ Código deve ser explicável em defesa oral — entender cada linha.
@@ -187,7 +191,7 @@ Os seguintes aspetos não estão especificados e devem ser decididos de forma si
 
 ---
 
-### 10. Entregas e Prazos
+## 10. Entregas e Prazos
 
 | Entrega | Data | Conteúdo | Valor |
 |---|---|---|---|
@@ -199,7 +203,7 @@ Os seguintes aspetos não estão especificados e devem ser decididos de forma si
 
 ---
 
-### 11. Requisitos Específicos da M1 (Programa `placar` standalone)
+## 11. Requisitos Específicos da M1 (Programa `placar` standalone)
 
 Para a primeira entrega, o `placar` deve funcionar **sem o `central`**, simulando os comportamentos:
 
@@ -220,11 +224,9 @@ Para a primeira entrega, o `placar` deve funcionar **sem o `central`**, simuland
 
 ---
 
-### 12. Requisitos Específicos da M2 (Programa `central` + `placar` com comunicação real)
+## 12. Requisitos Específicos da M2 (Programa `central` + `placar` com comunicação real)
 
-Para a segunda entrega (10 de maio), o material a entregar é:
-
-#### 12.1 Programa `central` implementado
+### 12.1 Programa `central` implementado
 
 1. Recebe através da **linha de comandos** o nome do named pipe a utilizar na comunicação com os placar. Ao escrever no terminal `central.exe tubo`, deve utilizar o named pipe com o nome `tubo` (`\\.\pipe\tubo`).
 
@@ -241,7 +243,7 @@ Para a segunda entrega (10 de maio), o material a entregar é:
 
 4. Deve manter a **informação de estado do sistema atualizada**, nomeadamente os placar que se encontram ligados, os alertas ativos e os identificadores atribuídos, garantindo a **coerência dos dados**.
 
-#### 12.2 Alterações ao programa `placar` para comunicar com o `central`
+### 12.2 Alterações ao programa `placar` para comunicar com o `central`
 
 5. Enviar o pedido de **"ligar"** ao central (`MSG_CMD`: tipo = 1), receber o identificador que lhe foi atribuído (`MSG_ID`: tipo = 7) e mostrar o valor ao utilizador instalador (da mesma forma que no ponto 1 da M1).
 
@@ -255,6 +257,72 @@ Para a segunda entrega (10 de maio), o material a entregar é:
 
 10. Quando recebe uma atualização do tipo **"encerrar"** do central (`MSG_CMD`: tipo = 6) deve **terminar a execução** da aplicação placar.
 
-#### 12.3 Documentação
+### 12.3 Documentação
 
 - Um ficheiro `readme.txt` (ou `.md`) incluído na pasta do projeto, onde indique quais os requisitos implementados.
+
+---
+
+## 13. Requisitos Específicos da M3 (Programa `monitor` + alterações ao `central`)
+
+### 13.1 Programa `monitor` implementado
+
+1. Menu **"Ficheiro"** com as entradas **"Configuração"**, **"Acerca"** e **"Sair"**:
+   - **"Configuração"** → abrir uma `DialogBox` que permita definir:
+     - Número máximo de alertas a apresentar na interface.
+     - Nome dos recursos de comunicação/sincronização criados pelo `central` (memória partilhada, eventos, mutex).
+   - **"Acerca"** → `MessageBox` com nome e número dos alunos que integram o grupo.
+   - **"Sair"** → terminar a aplicação, libertando todos os recursos utilizados. Não é necessário informar o `central`.
+
+2. Mostrar na **área de cliente da janela principal** a informação relativa aos alertas/placares ativos:
+   - Identificador do placar.
+   - Mensagem de alerta atual.
+   - Duração (em segundos).
+
+3. Caso o número de alertas/placares ativos seja superior ao número máximo configurado (ver ponto 1), deve ser possível utilizar as teclas **Page Down** e **Page Up** para navegar entre páginas de alertas.
+
+### 13.2 Alterações ao programa `central` para suporte ao `monitor`
+
+4. Criar um bloco de **memória partilhada** (`CreateFileMapping` + `MapViewOfFile`) com a estrutura `SHM_ALERTA`, conforme definido na secção 5.2, para disponibilizar a informação aos programas `monitor`.
+
+5. Implementar os **mecanismos de sincronização** necessários a:
+   - Garantir a **coerência da informação** disponibilizada na SHM (mutex nomeado).
+   - Fazer com que **qualquer alteração** aos alertas/placares seja repercutida de imediato na interface dos programas `monitor` (evento nomeado de reset manual).
+
+   > ⚠️ A utilização de **polling** não é considerada uma solução eficiente e **não deve ser utilizada**.
+
+6. Atualizar a SHM nos seguintes eventos:
+   - **Novo alerta confirmado** (tipo 4): trancar mutex → escrever entrada na SHM → destrancar mutex → sinalizar evento de notificação.
+   - **Cancelar alerta confirmado** (tipo 5): trancar mutex → limpar entrada do placar na SHM → destrancar mutex → sinalizar evento.
+   - **Fim de duração** (tipo 3): trancar mutex → limpar entrada do placar na SHM → destrancar mutex → sinalizar evento.
+   - **Encerrar plataforma**: trancar mutex → setar `SHM_ALERTA.desligar = TRUE` → destrancar mutex → sinalizar evento (para notificar todos os `monitor`).
+
+7. Libertar todos os recursos associados à SHM antes de terminar (`UnmapViewOfFile`, `CloseHandle` do mapping, evento e mutex).
+
+### 13.3 Documentação
+
+- Um ficheiro `readme.txt` (ou `.md`) incluído na pasta do projeto, indicando:
+  - Quais os requisitos implementados.
+  - Se o aluno pretende realizar a **defesa oral individual** presencial.
+- **Caso pretenda realizar a defesa oral**, entregar adicionalmente um **relatório** (máximo 10 páginas) com:
+  - Os pontos essenciais da implementação de cada um dos três programas.
+  - Todos os aspetos não explicitamente mencionados no enunciado e que foram decididos pelos alunos.
+  - Um **diagrama** com os mecanismos de comunicação e de sincronização.
+
+---
+
+## 14. Avaliação
+
+| Componente | Valor |
+|---|---|
+| Avaliação funcional (M1 + M2 + M3) | 2,5 valores |
+| Defesa oral individual (opcional) | +1,5 valores |
+| **Máximo com defesa oral** | **4 valores** |
+
+A fórmula de cálculo com defesa oral é:
+
+```
+(Avaliação_Funcional + 1.5 * Fator_Defesa) × Fator_Penalização
+```
+
+A avaliação funcional de cada entrega é realizada na **aula laboratorial imediatamente a seguir** à data de entrega. Apenas alunos inscritos no laboratório podem ser avaliados funcionalmente.

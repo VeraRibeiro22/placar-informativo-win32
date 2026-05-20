@@ -94,6 +94,8 @@ unsigned __stdcall CommandThread(void* param) {
             ctx->pShm->desligar = TRUE;
             ReleaseMutex(ctx->hShmMutex);
             SetEvent(ctx->hShmEvent);  // avisar o monitor antes de fechar tudo
+            Sleep(20);                 // dar tempo aos monitores
+            ResetEvent(ctx->hShmEvent);
 
             // Sinaliza o evento de shutdown para acordar a AcceptThread e as PlacarHandlerThread
             SetEvent(ctx->hShutdown);
