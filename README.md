@@ -69,23 +69,3 @@ encerrar
 ```
 
 ---
-
-## Estado do Projeto (Meta 2)
-
-### Programa CENTRAL *(Concluído)*
-- [x]  Ler nome do named pipe por linha de comandos.
-- [x]  Implementar gestão de Named Pipes (Modo Mensagem, bidirecional, i/o assíncrono).
-- [x]  Implementar limite de instância única (Mutex nomeado)
-- [x]  Implementar comando `alerta <msg> <duracao> <id>`: Envia um alerta para o placar com o ID especificado.
-- [x]  Implementar comando `cancelar <id>`: Cancela o alerta do placar com o ID especificado.
-- [x]  Implementar comando `listar`: Mostra os placares ativos, respetivos IDs e alertas em curso.
-- [x]  Implementar comando `encerrar`: Termina todos os placares ligados e encerra a central.
-- [x]  Processar mensagens vindas dos PLACARES.
-
-### Programa PLACAR *(Concluído)*
-- [x]  Remover lógica de simulação da Meta 1 (Registry e Eventos nomeados).
-- [x]  Implementar a ligação ao Central através de Named Pipes.
-- [x]  Comando `ligar`: Envia pedido de registo ao Central.
-- [x]  Comando `desligar`: Envia pedido de encerramento ao Central.
-- [x]  Notificar fim de alerta: Envia aviso ao Central quando o timer de duração expirar.
-- [x]  Processar mensagens vindas do CENTRAL.
